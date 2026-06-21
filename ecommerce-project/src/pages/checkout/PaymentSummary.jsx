@@ -1,14 +1,16 @@
 import { useNavigate } from 'react-router';
 import { formatMoney } from '../../utils/money';
-import axios from 'axios';
 
-export function PaymentSummary({ paymentSummary , loadCart }) {
+export function PaymentSummary({ paymentSummary, cart }) {
     const navigate = useNavigate();
 
-    const createOrder = async ()=>{
-        await axios.post('/api/orders');
-        await loadCart();
-        navigate('/orders');
+    const goToPayment = () => {
+        const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
+        if (totalQuantity === 0) {
+            alert('Your cart is empty. Add items before placing an order.');
+            return;
+        }
+        navigate('/payment');
     };
 
     return (
@@ -55,7 +57,7 @@ export function PaymentSummary({ paymentSummary , loadCart }) {
                 </>
             )}
 
-            <button className="place-order-button button-primary" onClick={createOrder}>
+            <button className="place-order-button button-primary" onClick={goToPayment}>
                 Place your order
             </button>
         </div>
