@@ -8,29 +8,20 @@ import dayjs from 'dayjs';
 
 export function TrackingPage({ cart }) {
     const { orderId, productId } = useParams();
-    const [tracking, setTracking] = useState(null);
+    const [order, setOrder] = useState(null);
 
     useEffect(() => {
-        axios.get(`/api/tracking/${orderId}`)
+        axios.get(`/api/orders/${orderId}?expand=products`)
             .then((response) => {
-                const product = response.data.products.find(p => p.productId === productId);
-                setTracking(product || response.data.products[0]);
+                setOrder(response.data);
             });
-    }, [orderId, productId]);
+    }, [orderId]);
 
-    if (!tracking) {
-        return (
-            <>
-                <title>Tracking</title>
-                <link rel="icon" href="tracking-favicon.png" />
-                <Header cart={cart} />
-                <div className="tracking-page">Loading...</div>
-            </>
-        );
+    if (!order) {
+        return null;
     }
 
-    const statuses = ['Preparing', 'Shipped', 'Delivered'];
-    const currentStatusIndex = statuses.indexOf(tracking.status);
+    const product = order.products.find(p => p.productId === productId);
 
     return (
         <>
@@ -46,30 +37,18 @@ export function TrackingPage({ cart }) {
                     </Link>
 
                     <div className="delivery-date">
-                        Arriving on {dayjs(tracking.estimatedDeliveryTimeMs).format('dddd, MMMM D')}
+                        Arriving on {dayjs(product.estimatedDeliveryTimeMs).format('dddd, MMMM D')}
                     </div>
 
                     <div className="product-info">
-                        {tracking.product?.name}
+                        {product.product?.name}
                     </div>
 
                     <div className="product-info">
-                        Quantity: {tracking.quantity}
+                        Quantity: {product.quantity}
                     </div>
 
-                    <img className="product-image" src={tracking.product?.image} />
-
-                    <div className="progress-labels-container">
-                        {statuses.map((status, index) => (
-                            <div key={status} className={`progress-label ${index === currentStatusIndex ? 'current-status' : ''}`}>
-                                {status}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="progress-bar-container">
-                        <div className="progress-bar" style={{ width: `${tracking.progress}%` }}></div>
-                    </div>
+                    <img className="product-image" src={product.product?.image} />
                 </div>
             </div>
         </>
