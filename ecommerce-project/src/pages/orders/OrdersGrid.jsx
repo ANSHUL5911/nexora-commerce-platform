@@ -40,7 +40,7 @@ function OrderDetailsGrid({ order }) {
                                 {orderProduct.product.name}
                             </div>
                             <div className="product-delivery-date">
-                                Arriving on: {dayjs(orderProduct.estimatedDeliveryTimeMs).format('dddd, MMMM D')}
+                                {Date.now() >= orderProduct.estimatedDeliveryTimeMs ? 'Delivered on' : 'Arriving on'}: {dayjs(orderProduct.estimatedDeliveryTimeMs).format('dddd, MMMM D')}
                             </div>
                             <div className="product-quantity">
                                 Quantity: {orderProduct.quantity}
