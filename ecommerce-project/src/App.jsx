@@ -1,4 +1,5 @@
 import axios from 'axios';
+window.axios = axios;
 import { Routes, Route } from 'react-router';
 import { useState, useEffect } from 'react';
 import './App.css';
