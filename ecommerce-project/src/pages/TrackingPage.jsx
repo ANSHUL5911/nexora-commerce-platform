@@ -1,12 +1,42 @@
 import { Header } from '../components/Header';
 import './TrackingPage.css';
+import { useParams } from 'react-router';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
 
 
 export function TrackingPage() {
+    const { orderId, productId } = useParams();
+    const [tracking, setTracking] = useState(null);
+
+    useEffect(() => {
+        axios.get(`/api/tracking/${orderId}`)
+            .then((response) => {
+                const product = response.data.products.find(p => p.productId === productId);
+                setTracking(product || response.data.products[0]);
+            });
+    }, [orderId, productId]);
+
+    if (!tracking) {
+        return (
+            <>
+                <title>Tracking</title>
+                <link rel="icon" href="tracking-favicon.png" />
+                <Header />
+                <div className="tracking-page">Loading...</div>
+            </>
+        );
+    }
+
+    const statuses = ['Preparing', 'Shipped', 'Delivered'];
+    const currentStatusIndex = statuses.indexOf(tracking.status);
+
     return (
         <>
             <title>Tracking</title>
-            
+            <link rel="icon" href="tracking-favicon.png" />
+
             <Header />
 
             <div className="tracking-page">
@@ -16,33 +46,29 @@ export function TrackingPage() {
                     </a>
 
                     <div className="delivery-date">
-                        Arriving on Monday, June 13
+                        Arriving on {dayjs(tracking.estimatedDeliveryTimeMs).format('dddd, MMMM D')}
                     </div>
 
                     <div className="product-info">
-                        Black and Gray Athletic Cotton Socks - 6 Pairs
+                        {tracking.product?.name}
                     </div>
 
                     <div className="product-info">
-                        Quantity: 1
+                        Quantity: {tracking.quantity}
                     </div>
 
-                    <img className="product-image" src="images/products/athletic-cotton-socks-6-pairs.jpg" />
+                    <img className="product-image" src={tracking.product?.image} />
 
                     <div className="progress-labels-container">
-                        <div className="progress-label">
-                            Preparing
-                        </div>
-                        <div className="progress-label current-status">
-                            Shipped
-                        </div>
-                        <div className="progress-label">
-                            Delivered
-                        </div>
+                        {statuses.map((status, index) => (
+                            <div key={status} className={`progress-label ${index === currentStatusIndex ? 'current-status' : ''}`}>
+                                {status}
+                            </div>
+                        ))}
                     </div>
 
                     <div className="progress-bar-container">
-                        <div className="progress-bar"></div>
+                        <div className="progress-bar" style={{ width: `${tracking.progress}%` }}></div>
                     </div>
                 </div>
             </div>
