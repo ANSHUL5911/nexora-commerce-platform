@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 
 
-export function TrackingPage() {
+export function TrackingPage({ cart }) {
     const { orderId, productId } = useParams();
     const [tracking, setTracking] = useState(null);
 
@@ -23,7 +23,7 @@ export function TrackingPage() {
             <>
                 <title>Tracking</title>
                 <link rel="icon" href="tracking-favicon.png" />
-                <Header />
+                <Header cart={cart} />
                 <div className="tracking-page">Loading...</div>
             </>
         );
@@ -37,7 +37,7 @@ export function TrackingPage() {
             <title>Tracking</title>
             <link rel="icon" href="tracking-favicon.png" />
 
-            <Header />
+            <Header cart={cart} />
 
             <div className="tracking-page">
                 <div className="order-tracking">
