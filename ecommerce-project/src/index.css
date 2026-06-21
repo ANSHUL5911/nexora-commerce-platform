@@ -28,7 +28,7 @@ button {
 
 .button-primary {
   color: rgb(255, 255, 255);
-  background-color: rgb(25, 135, 84);
+  background-color: #0063FF;
   border: 1px solid transparent;
   border-radius: 5px;
   cursor: pointer;
@@ -36,12 +36,12 @@ button {
 }
 
 .button-primary:hover {
-  background-color: rgba(25, 135, 84, 0.75);
+  background-color: #0052D4;
   border: 1px solid transparent;
 }
 
 .button-primary:active {
-  background: rgba(25, 135, 84, 0.5);
+  background: #0041AA;
   border-color: transparent;
   box-shadow: none;
 }
@@ -77,7 +77,7 @@ button {
 }
 
 .link-primary {
-  color: rgb(25, 135, 84);
+  color: #0063FF;
   cursor: pointer;
 }
 
@@ -103,5 +103,5 @@ select {
 
 select:focus,
 input:focus {
-  outline: 2px solid rgb(25, 135, 84);
+  outline: 2px solid #0063FF;
 }

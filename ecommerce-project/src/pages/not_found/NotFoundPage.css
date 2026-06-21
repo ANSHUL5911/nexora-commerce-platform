@@ -13,7 +13,10 @@
 .not-found-title {
     font-size: 120px;
     font-weight: 700;
-    color: rgb(8, 79, 45);
+    background: linear-gradient(135deg, #122747, #0063FF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 10px;
 }
 
@@ -24,7 +27,7 @@
 }
 
 .not-found-link {
-    color: rgb(25, 135, 84);
+    color: #0063FF;
     font-size: 18px;
     text-decoration: none;
 }

@@ -1,5 +1,5 @@
 .header {
-  background-color: rgb(8, 79, 45);
+  background: linear-gradient(135deg, #122747, #0063FF);
   color: white;
   padding-left: 15px;
   padding-right: 15px;
@@ -32,6 +32,12 @@
   cursor: pointer;
   text-decoration: none;
   border: 1px solid rgba(0, 0, 0, 0);
+  color: inherit;
+}
+
+.header .header-link:visited,
+.header .header-link:active {
+  color: inherit;
 }
 
 .header .header-link:hover {
@@ -39,23 +45,29 @@
 }
 
 .header .logo {
-  height: 26px;
+  height: 36px;
   margin-top: 1px;
+  vertical-align: middle;
 }
 
-.header .mobile-logo {
-  display: none;
+.header .site-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-left: 8px;
+  vertical-align: middle;
+  background: linear-gradient(90deg, #87CEEB, #FFFFFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 @media (max-width: 675px) {
   .header .logo {
-    display: none;
+    height: 26px;
   }
 
-  .header .mobile-logo {
-    display: block;
-    height: 26px;
-    margin-top: 1px;
+  .header .site-name {
+    display: none;
   }
 }
 
@@ -81,7 +93,7 @@
 }
 
 .header .search-button {
-  background-color: rgb(186, 255, 190);
+  background-color: #D6E8FF;
   border: none;
   width: 45px;
   height: 40px;
@@ -140,14 +152,18 @@
 }
 
 .header .cart-quantity {
-  color: rgb(8, 79, 45);
+  color: white;
+  background-color: #0063FF;
   font-size: 14px;
   font-weight: 700;
+  border-radius: 50%;
 
   position: absolute;
-  top: 8.5px;
-  right: 46px;
+  top: 4px;
+  right: 40px;
 
-  width: 26px;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
   text-align: center;
 }

@@ -15,11 +15,8 @@ export function Header({ cart = [] }) {
         <div className="header">
             <div className="left-section">
                 <NavLink to="/" className="header-link">
-                    <img className="logo" src="images/logo-white.png" />
-                    <img
-                        className="mobile-logo"
-                        src="images/mobile-logo-white.png"
-                    />
+                    <img className="logo" src="images/logo2.png" />
+                    <span className="site-name">Nexora</span>
                 </NavLink>
             </div>
 

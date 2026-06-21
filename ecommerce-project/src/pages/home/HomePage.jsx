@@ -23,7 +23,7 @@ export function HomePage({ cart, loadCart }) {
 
     return (
         <>
-            <title>Ecommerce Project</title>
+            <title>Nexora</title>
             <link rel="icon" href="home-favicon.png" />
 
             <Header cart={cart} />
