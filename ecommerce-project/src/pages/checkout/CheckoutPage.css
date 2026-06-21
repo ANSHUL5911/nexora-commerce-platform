@@ -115,6 +115,10 @@
   margin-bottom: 5px;
 }
 
+.checkout-page .product-quantity .quantity-input {
+  width: 50px;
+}
+
 .checkout-page .product-quantity .link-primary {
   margin-left: 3px;
 }
