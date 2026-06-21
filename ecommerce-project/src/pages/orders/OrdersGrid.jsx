@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router';
 import dayjs from 'dayjs';
+import axios from 'axios';
 import { formatMoney } from '../../utils/money';
 
 function OrderHeader({ order }) {
@@ -25,7 +26,16 @@ function OrderHeader({ order }) {
     );
 }
 
-function OrderDetailsGrid({ order }) {
+function OrderDetailsGrid({ order, loadCart }) {
+
+    const addToCart = async (productId) => {
+        await axios.post('/api/cart-items', {
+            productId,
+            quantity: 1
+        });
+        await loadCart();
+    };
+
     return (
         <div className="order-details-grid">
             {order.products.map((orderProduct) => {
@@ -45,7 +55,7 @@ function OrderDetailsGrid({ order }) {
                             <div className="product-quantity">
                                 Quantity: {orderProduct.quantity}
                             </div>
-                            <button className="buy-again-button button-primary">
+                            <button className="buy-again-button button-primary" onClick={() => addToCart(orderProduct.product.id)}>
                                 <img className="buy-again-icon" src="images/icons/buy-again.png" />
                                 <span className="buy-again-message">Add to Cart</span>
                             </button>
@@ -65,14 +75,14 @@ function OrderDetailsGrid({ order }) {
     );
 }
 
-export function OrdersGrid({ orders }) {
+export function OrdersGrid({ orders, loadCart }) {
     return (
         <div className="orders-grid">
             {orders.map((order) => {
                 return (
                     <div key={order.id} className="order-container">
                         <OrderHeader order={order} />
-                        <OrderDetailsGrid order={order} />
+                        <OrderDetailsGrid order={order} loadCart={loadCart} />
                     </div>
                 );
             })}
