@@ -1,4 +1,5 @@
 import './OrdersPage.css';
+import { Link } from 'react-router';
 import { Header } from '../../components/Header';
 import axios from 'axios';
 import { useEffect, useState, Fragment } from 'react';
@@ -76,11 +77,11 @@ export function OrdersPage({ cart }) {
                                                 </div>
 
                                                 <div className="product-actions">
-                                                    <a href={`/tracking/${order.id}/${orderProduct.product.id}`}>
+                                                    <Link to={`/tracking/${order.id}/${orderProduct.product.id}`}>
                                                         <button className="track-package-button button-secondary">
                                                             Track package
                                                         </button>
-                                                    </a>
+                                                    </Link>
                                                 </div>
                                             </Fragment>);
                                     })}

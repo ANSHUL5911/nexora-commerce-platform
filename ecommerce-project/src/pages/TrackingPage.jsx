@@ -1,6 +1,6 @@
 import { Header } from '../components/Header';
 import './TrackingPage.css';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
@@ -41,9 +41,9 @@ export function TrackingPage() {
 
             <div className="tracking-page">
                 <div className="order-tracking">
-                    <a className="back-to-orders-link link-primary" href="/orders">
+                    <Link className="back-to-orders-link link-primary" to="/orders">
                         View all orders
-                    </a>
+                    </Link>
 
                     <div className="delivery-date">
                         Arriving on {dayjs(tracking.estimatedDeliveryTimeMs).format('dddd, MMMM D')}
