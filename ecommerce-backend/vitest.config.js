@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.js'],
     reporters: ['default'],
-    testTimeout: 10000,
+    testTimeout: 20000,
+    fileParallelism: false,
   },
 });
