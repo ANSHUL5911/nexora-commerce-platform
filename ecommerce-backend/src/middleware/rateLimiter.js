@@ -38,6 +38,8 @@ export const authLimiter = rateLimit({
   max: config.RATE_LIMIT_MAX_AUTH, // 5 requests / min / IP
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, default: false },
+  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
   handler: createRateLimitHandler('Too many authentication attempts. Please try again in 1 minute.'),
 });
 

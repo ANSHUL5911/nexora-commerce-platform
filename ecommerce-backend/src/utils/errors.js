@@ -26,26 +26,26 @@ export class ValidationError extends AppError {
 }
 
 export class AuthenticationError extends AppError {
-  constructor(message = 'Authentication required') {
-    super(message, 401, 'UNAUTHENTICATED');
+  constructor(message = 'Authentication required', code = 'UNAUTHENTICATED', details = null) {
+    super(message, 401, code, details);
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message = 'Access denied') {
-    super(message, 403, 'FORBIDDEN');
+  constructor(message = 'Access denied', code = 'FORBIDDEN', details = null) {
+    super(message, 403, code, details);
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = 'Resource not found') {
-    super(message, 404, 'NOT_FOUND');
+  constructor(message = 'Resource not found', code = 'NOT_FOUND', details = null) {
+    super(message, 404, code, details);
   }
 }
 
 export class ConflictError extends AppError {
-  constructor(message = 'Resource conflict', details = null) {
-    super(message, 409, 'CONFLICT', details);
+  constructor(message = 'Resource conflict', code = 'CONFLICT', details = null) {
+    super(message, 409, code, details);
   }
 }
 

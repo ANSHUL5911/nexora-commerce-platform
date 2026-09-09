@@ -11,12 +11,15 @@ if (config.DB_SSL) {
   };
 }
 
+const databaseName =
+  config.NODE_ENV === 'test' ? process.env.TEST_DB_NAME || 'nexora_test' : config.DB_NAME;
+
 export const sequelize = new Sequelize({
   dialect: 'postgres',
   dialectModule: pg,
   host: config.DB_HOST,
   port: config.DB_PORT,
-  database: config.DB_NAME,
+  database: databaseName,
   username: config.DB_USER,
   password: config.DB_PASSWORD,
   dialectOptions,
