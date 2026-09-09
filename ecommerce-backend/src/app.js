@@ -9,6 +9,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { productRouter } from './modules/products/product.routes.js';
 import { config } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,7 +42,10 @@ export function createApp() {
   // 7. Authentication Router
   app.use('/api/auth', authRouter);
 
-  // 8. Health check endpoint
+  // 8. Products & Catalog Router
+  app.use('/api/products', productRouter);
+
+  // 9. Health check endpoint
   app.get('/api/health', (req, res) => {
     res.status(200).json({
       status: 'ok',
@@ -52,14 +56,15 @@ export function createApp() {
     });
   });
 
-  // 9. Static assets (images)
+  // 10. Static assets (images)
   app.use('/images', express.static(path.join(backendRoot, 'images')));
 
-  // 10. API 404 handler for unmatched /api routes
+  // 11. API 404 handler for unmatched /api routes
   app.use('/api', notFoundHandler);
 
-  // 11. Central error handler
+  // 12. Central error handler
   app.use(errorHandler);
+
 
   return app;
 }

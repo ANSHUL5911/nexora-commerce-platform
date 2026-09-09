@@ -1,6 +1,7 @@
 import { User } from './User.js';
 import { Session } from './Session.js';
 import { AuditLog } from './AuditLog.js';
+import { Product } from './Product.js';
 
 // Define associations
 User.hasMany(Session, {
@@ -27,5 +28,6 @@ AuditLog.belongsTo(User, {
   onDelete: 'SET NULL',
 });
 
-export { User, Session, AuditLog };
-export default { User, Session, AuditLog };
+export { User, Session, AuditLog, Product };
+export default { User, Session, AuditLog, Product };
+
