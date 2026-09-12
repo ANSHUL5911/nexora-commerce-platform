@@ -5,6 +5,8 @@ import { Product } from './Product.js';
 import { Cart } from './Cart.js';
 import { CartItem } from './CartItem.js';
 import { InventoryReservation } from './InventoryReservation.js';
+import { Order } from './Order.js';
+import { OrderItem } from './OrderItem.js';
 
 // User <-> Session (1:N)
 User.hasMany(Session, {
@@ -84,6 +86,78 @@ InventoryReservation.belongsTo(Product, {
   onDelete: 'RESTRICT',
 });
 
-export { User, Session, AuditLog, Product, Cart, CartItem, InventoryReservation };
-export default { User, Session, AuditLog, Product, Cart, CartItem, InventoryReservation };
+// User <-> Order (1:N)
+User.hasMany(Order, {
+  foreignKey: 'user_id',
+  as: 'orders',
+  onDelete: 'SET NULL',
+});
 
+Order.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user',
+  onDelete: 'SET NULL',
+});
+
+// Order <-> OrderItem (1:N)
+Order.hasMany(OrderItem, {
+  foreignKey: 'order_id',
+  as: 'items',
+  onDelete: 'CASCADE',
+});
+
+OrderItem.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+  onDelete: 'CASCADE',
+});
+
+// Product <-> OrderItem (1:N)
+Product.hasMany(OrderItem, {
+  foreignKey: 'product_id',
+  as: 'orderItems',
+  onDelete: 'RESTRICT',
+});
+
+OrderItem.belongsTo(Product, {
+  foreignKey: 'product_id',
+  as: 'product',
+  onDelete: 'RESTRICT',
+});
+
+// Order <-> InventoryReservation (1:N)
+Order.hasMany(InventoryReservation, {
+  foreignKey: 'order_id',
+  as: 'reservations',
+  onDelete: 'CASCADE',
+});
+
+InventoryReservation.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+  onDelete: 'CASCADE',
+});
+
+export {
+  User,
+  Session,
+  AuditLog,
+  Product,
+  Cart,
+  CartItem,
+  InventoryReservation,
+  Order,
+  OrderItem,
+};
+
+export default {
+  User,
+  Session,
+  AuditLog,
+  Product,
+  Cart,
+  CartItem,
+  InventoryReservation,
+  Order,
+  OrderItem,
+};

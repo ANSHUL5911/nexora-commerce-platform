@@ -12,6 +12,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { productRouter } from './modules/products/product.routes.js';
 import { cartRouter } from './modules/cart/cart.routes.js';
 import { inventoryRouter } from './modules/inventory/inventory.routes.js';
+import { orderRouter } from './modules/orders/order.routes.js';
 import { config } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,6 +53,9 @@ export function createApp() {
 
   // 10. Inventory & Reservation Router
   app.use('/api/inventory', inventoryRouter);
+
+  // 11. Orders & OrderItems Router
+  app.use('/api/orders', orderRouter);
 
   // 9. Health check endpoint
   app.get('/api/health', (req, res) => {
