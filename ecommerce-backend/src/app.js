@@ -10,6 +10,7 @@ import { generalLimiter } from './middleware/rateLimiter.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { productRouter } from './modules/products/product.routes.js';
+import { cartRouter } from './modules/cart/cart.routes.js';
 import { config } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +45,9 @@ export function createApp() {
 
   // 8. Products & Catalog Router
   app.use('/api/products', productRouter);
+
+  // 9. Cart Router
+  app.use('/api/cart', cartRouter);
 
   // 9. Health check endpoint
   app.get('/api/health', (req, res) => {
