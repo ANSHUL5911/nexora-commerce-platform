@@ -20,15 +20,34 @@ export async function createOrder(req, res, next) {
 
 
 /**
- * Controller to retrieve an order by ID for the authenticated user.
+ * Controller to retrieve an order by ID for an authenticated user or guest.
  * GET /api/orders/:orderId
  */
 export async function getOrder(req, res, next) {
   try {
+    const guestToken = req.headers['x-guest-token'];
     const orderDTO = await orderService.getOrderById(req.params.orderId, {
-      userId: req.user.id,
-      role: req.user.role,
+      userId: req.user?.id,
+      role: req.user?.role,
+      guestToken,
     });
+    return res.status(200).json({
+      success: true,
+      data: orderDTO,
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * Controller to retrieve a guest order by ID with X-Guest-Token header validation.
+ * GET /api/orders/guest/:orderId
+ */
+export async function getGuestOrder(req, res, next) {
+  try {
+    const guestToken = req.headers['x-guest-token'];
+    const orderDTO = await orderService.getGuestOrder(req.params.orderId, guestToken);
     return res.status(200).json({
       success: true,
       data: orderDTO,
@@ -58,5 +77,6 @@ export async function listOrders(req, res, next) {
 export default {
   createOrder,
   getOrder,
+  getGuestOrder,
   listOrders,
 };

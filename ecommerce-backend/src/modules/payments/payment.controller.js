@@ -8,10 +8,12 @@ export const paymentController = {
   async createPaymentOrder(req, res, next) {
     try {
       const { orderId } = req.body;
+      const guestToken = req.headers['x-guest-token'];
       const result = await paymentService.initiatePayment({
         orderId,
         userId: req.user?.id,
         role: req.user?.role,
+        guestToken,
         idempotencyRecord: req.idempotencyRecord,
       });
 
@@ -35,10 +37,12 @@ export const paymentController = {
   async retryPayment(req, res, next) {
     try {
       const { orderId } = req.body;
+      const guestToken = req.headers['x-guest-token'];
       const result = await paymentService.retryPayment({
         orderId,
         userId: req.user?.id,
         role: req.user?.role,
+        guestToken,
         idempotencyRecord: req.idempotencyRecord,
       });
 
@@ -62,6 +66,7 @@ export const paymentController = {
   async verifyPayment(req, res, next) {
     try {
       const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+      const guestToken = req.headers['x-guest-token'];
       const result = await paymentService.verifyPayment({
         orderId,
         razorpayOrderId,
@@ -69,6 +74,7 @@ export const paymentController = {
         razorpaySignature,
         userId: req.user?.id,
         role: req.user?.role,
+        guestToken,
         idempotencyRecord: req.idempotencyRecord,
       });
 

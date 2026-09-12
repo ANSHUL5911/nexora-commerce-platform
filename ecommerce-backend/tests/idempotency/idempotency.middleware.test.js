@@ -96,7 +96,7 @@ describe('Phase 07.10 — Idempotency Middleware & Fingerprinting Tests', () => 
   });
 
   describe('3. Replay Response Handling', () => {
-    it('immediately returns cached response with X-Idempotency-Replay header without executing handler', async () => {
+    it('immediately returns cached response with X-Idempotent-Replay header without executing handler', async () => {
       const key = `replay_key_${crypto.randomUUID()}`;
       const cachedPayload = { success: true, orderId: 'order_persisted_999' };
 
@@ -128,7 +128,7 @@ describe('Phase 07.10 — Idempotency Middleware & Fingerprinting Tests', () => 
         .send({ action: 'checkout' });
 
       expect(res.status).toBe(201);
-      expect(res.headers['x-idempotency-replay']).toBe('true');
+      expect(res.headers['x-idempotent-replay']).toBe('true');
       expect(res.body).toEqual(cachedPayload);
       expect(handlerSpy).not.toHaveBeenCalled();
     });

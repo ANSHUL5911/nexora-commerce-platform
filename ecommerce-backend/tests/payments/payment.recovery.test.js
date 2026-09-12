@@ -115,7 +115,7 @@ describe('Phase 07.10 — Payment Recovery & Ambiguous Gateway Outcome Tests', (
         .send({ orderId: order.id });
 
       expect(res2.status).toBe(201);
-      expect(res2.headers['x-idempotency-replay']).toBe('true');
+      expect(res2.headers['x-idempotent-replay']).toBe('true');
       expect(res2.body.data.razorpayOrderId).toBe('order_rzp_first_call_111');
 
       // createOrder() was NOT called a second time

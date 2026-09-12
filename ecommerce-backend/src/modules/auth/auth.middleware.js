@@ -82,8 +82,22 @@ export async function optionalAuth(req, res, next) {
   }
 }
 
+/**
+ * Require Auth or Guest Token Middleware:
+ * Verifies that the request either has an active user session OR provides an X-Guest-Token header.
+ * Throws HTTP 401 AuthenticationError if neither identity is present.
+ */
+export function requireAuthOrGuestToken(req, res, next) {
+  if (req.user || req.headers['x-guest-token']) {
+    return next();
+  }
+  throw new AuthenticationError('Authentication required. Please log in.', 'AUTHENTICATION_REQUIRED');
+}
+
 export default {
   SESSION_COOKIE_NAME,
   requireAuth,
   optionalAuth,
+  requireAuthOrGuestToken,
 };
+

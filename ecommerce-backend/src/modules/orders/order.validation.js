@@ -35,6 +35,57 @@ export const shippingAddressSchema = z
   })
   .strict({ message: 'Unrecognized or unauthorized fields in shipping address' });
 
+export const checkoutItemSchema = z
+  .object({
+    productId: z
+      .string({ required_error: 'Product ID is required' })
+      .uuid('Invalid product ID format. Must be a valid UUIDv4.'),
+    quantity: z
+      .number({ required_error: 'Quantity is required' })
+      .int('Quantity must be an integer')
+      .min(1, 'Quantity must be at least 1')
+      .max(10, 'Quantity cannot exceed 10 per line item'),
+  })
+  .strict({ message: 'Unrecognized fields in checkout line item' });
+
+export const checkoutInitiateSchema = z
+  .object({
+    items: z
+      .array(checkoutItemSchema)
+      .min(1, 'At least one item is required for guest checkout')
+      .refine(
+        (items) => {
+          const ids = items.map((i) => i.productId);
+          return new Set(ids).size === ids.length;
+        },
+        { message: 'Duplicate product IDs in checkout items are not allowed' }
+      )
+      .optional(),
+    shippingAddress: shippingAddressSchema,
+    shippingMethod: z
+      .enum(Object.values(SHIPPING_METHODS), {
+        invalid_type_error: 'Invalid shipping method',
+      })
+      .optional(),
+    shippingSpeed: z
+      .enum(Object.values(SHIPPING_METHODS), {
+        invalid_type_error: 'Invalid shipping speed',
+      })
+      .optional(),
+    email: z.string().email('Invalid email address').optional(),
+  })
+  .strict({ message: 'Unrecognized or unauthorized fields in checkout initiation payload' })
+  .refine((data) => Boolean(data.shippingMethod || data.shippingSpeed), {
+    message: 'Shipping method is required (STANDARD, EXPRESS, or OVERNIGHT)',
+    path: ['shippingMethod'],
+  })
+  .transform((data) => ({
+    items: data.items,
+    shippingAddress: data.shippingAddress,
+    shippingMethod: data.shippingMethod || data.shippingSpeed,
+    email: data.email,
+  }));
+
 export const createOrderSchema = z
   .object({
     shippingAddress: shippingAddressSchema,

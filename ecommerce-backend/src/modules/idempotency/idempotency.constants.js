@@ -15,7 +15,7 @@ export const IDEMPOTENCY_HEADER = 'idempotency-key';
 /**
  * Replay response header indicating cached response.
  */
-export const IDEMPOTENCY_REPLAY_HEADER = 'x-idempotency-replay';
+export const IDEMPOTENCY_REPLAY_HEADER = 'x-idempotent-replay';
 
 /**
  * Maximum permitted length for an idempotency key.

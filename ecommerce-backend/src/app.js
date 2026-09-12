@@ -13,6 +13,7 @@ import { productRouter } from './modules/products/product.routes.js';
 import { cartRouter } from './modules/cart/cart.routes.js';
 import { inventoryRouter } from './modules/inventory/inventory.routes.js';
 import { orderRouter } from './modules/orders/order.routes.js';
+import { checkoutRouter } from './modules/checkout/checkout.routes.js';
 import { paymentRouter } from './modules/payments/payment.routes.js';
 import { webhookRouter } from './modules/payments/webhook.routes.js';
 import { config } from './config/env.js';
@@ -66,10 +67,13 @@ export function createApp() {
   // 11. Orders & OrderItems Router
   app.use('/api/orders', orderRouter);
 
-  // 12. Payments & Razorpay Router
+  // 12. Checkout Initiation Router
+  app.use('/api/checkout', checkoutRouter);
+
+  // 13. Payments & Razorpay Router
   app.use('/api/payments', paymentRouter);
 
-  // 13. Asynchronous Razorpay Webhook Router
+  // 14. Asynchronous Razorpay Webhook Router
   app.use('/api/webhooks', webhookRouter);
 
   // 9. Health check endpoint

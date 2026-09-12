@@ -265,7 +265,7 @@ describe('Phase 07.10 — Real PostgreSQL Idempotency Concurrency Tests', () => 
         .send(payload);
 
       expect(res2.status).toBe(201);
-      expect(res2.headers['x-idempotency-replay']).toBe('true');
+      expect(res2.headers['x-idempotent-replay']).toBe('true');
       expect(res2.body.data.id).toBe(orderId1);
 
       // Exactly 1 order in database

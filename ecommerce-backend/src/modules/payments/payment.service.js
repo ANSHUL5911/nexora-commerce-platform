@@ -26,6 +26,7 @@ import {
   toPaymentInitiationDTO,
   toPaymentVerificationDTO,
 } from './payment.dto.js';
+import { verifyGuestToken, isGuestTokenExpired } from '../orders/guestToken.js';
 
 export const paymentService = {
   /**
@@ -39,11 +40,16 @@ export const paymentService = {
    *   orderId: string,
    *   userId?: string,
    *   role?: string,
+   *   guestToken?: string,
    *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
    * }} params
    * @returns {Promise<ReturnType<typeof toPaymentInitiationDTO>>}
    */
-  async initiatePayment({ orderId, userId, role, idempotencyRecord }) {
+  async initiatePayment({ orderId, userId, role, guestToken, idempotencyRecord }) {
+    if (!orderId) {
+      throw new PaymentVerificationError('Order ID is required to initiate payment.');
+    }
+
     // ----------------------------------------------------
     // PHASE A: Database Transaction (Strictly BEFORE Gateway)
     // ----------------------------------------------------
@@ -62,11 +68,21 @@ export const paymentService = {
         throw new OrderNotFoundError('Order was not found.');
       }
 
-      // 2. Anti-IDOR: Verify customer ownership
-      if (userId && String(role || '').toLowerCase() !== 'admin') {
-        if (order.user_id !== userId) {
+      // 2. Anti-IDOR: Strict authorization chain
+      if (guestToken && typeof guestToken === 'string' && guestToken.trim() !== '') {
+        if (order.user_id !== null || !order.guest_token_hash) {
           throw new OrderNotFoundError('Order was not found.');
         }
+        const isValidToken = verifyGuestToken(guestToken, order.guest_token_hash);
+        if (!isValidToken || isGuestTokenExpired(order.created_at)) {
+          throw new OrderNotFoundError('Order was not found.');
+        }
+      } else if (userId) {
+        if (String(role || '').toLowerCase() !== 'admin' && order.user_id !== userId) {
+          throw new OrderNotFoundError('Order was not found.');
+        }
+      } else {
+        throw new OrderNotFoundError('Order was not found.');
       }
 
       // 3. Verify Order status is PENDING_PAYMENT
@@ -273,12 +289,13 @@ export const paymentService = {
    *   orderId: string,
    *   userId?: string,
    *   role?: string,
+   *   guestToken?: string,
    *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
    * }} params
    * @returns {Promise<ReturnType<typeof toPaymentInitiationDTO>>}
    */
-  async retryPayment({ orderId, userId, role, idempotencyRecord }) {
-    return this.initiatePayment({ orderId, userId, role, idempotencyRecord });
+  async retryPayment({ orderId, userId, role, guestToken, idempotencyRecord }) {
+    return this.initiatePayment({ orderId, userId, role, guestToken, idempotencyRecord });
   },
 
   /**
@@ -496,6 +513,7 @@ export const paymentService = {
     razorpaySignature,
     userId,
     role,
+    guestToken,
     idempotencyRecord,
   }) {
     // 1. Ownership & Anti-IDOR verification
@@ -504,10 +522,20 @@ export const paymentService = {
       throw new OrderNotFoundError('Order was not found.');
     }
 
-    if (userId && String(role || '').toLowerCase() !== 'admin') {
-      if (order.user_id !== userId) {
+    if (guestToken && typeof guestToken === 'string' && guestToken.trim() !== '') {
+      if (order.user_id !== null || !order.guest_token_hash) {
         throw new OrderNotFoundError('Order was not found.');
       }
+      const isValidToken = verifyGuestToken(guestToken, order.guest_token_hash);
+      if (!isValidToken || isGuestTokenExpired(order.created_at)) {
+        throw new OrderNotFoundError('Order was not found.');
+      }
+    } else if (userId) {
+      if (String(role || '').toLowerCase() !== 'admin' && order.user_id !== userId) {
+        throw new OrderNotFoundError('Order was not found.');
+      }
+    } else {
+      throw new OrderNotFoundError('Order was not found.');
     }
 
     // 2. Resolve PaymentAttempt

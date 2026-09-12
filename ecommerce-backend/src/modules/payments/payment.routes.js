@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../auth/auth.middleware.js';
+import { optionalAuth, requireAuthOrGuestToken } from '../auth/auth.middleware.js';
 import { verifyCsrf } from '../auth/csrf.js';
 import { requireIdempotency } from '../idempotency/idempotency.middleware.js';
 import { checkoutLimiter } from '../../middleware/rateLimiter.js';
@@ -13,16 +13,17 @@ import { paymentController } from './payment.controller.js';
 
 export const paymentRouter = Router();
 
-// All payment endpoints require server-side session authentication
-paymentRouter.use(requireAuth);
+// Payment endpoints inspect session context
+paymentRouter.use(optionalAuth);
 
 /**
  * POST /api/payments/create-order
  * Initiate a Razorpay payment attempt for a PENDING_PAYMENT order.
- * Protected by Auth, CSRF double-submit, Rate Limiting, Idempotency-Key, and strict Zod validation.
+ * Protected by Auth / X-Guest-Token, CSRF double-submit, Rate Limiting, Idempotency-Key, and strict Zod validation.
  */
 paymentRouter.post(
   '/create-order',
+  requireAuthOrGuestToken,
   checkoutLimiter,
   verifyCsrf,
   validateBody(createPaymentSchema),
@@ -33,10 +34,11 @@ paymentRouter.post(
 /**
  * POST /api/payments/retry
  * Retry payment on an existing PENDING_PAYMENT order (creates new PaymentAttempt + Razorpay Order).
- * Protected by Auth, CSRF double-submit, Rate Limiting, Idempotency-Key, and strict Zod validation.
+ * Protected by Auth / X-Guest-Token, CSRF double-submit, Rate Limiting, Idempotency-Key, and strict Zod validation.
  */
 paymentRouter.post(
   '/retry',
+  requireAuthOrGuestToken,
   checkoutLimiter,
   verifyCsrf,
   validateBody(retryPaymentSchema),
@@ -47,10 +49,11 @@ paymentRouter.post(
 /**
  * POST /api/payments/verify
  * Reconcile frontend checkout result with server-side HMAC-SHA256 signature and gateway capture verification.
- * Protected by Auth, CSRF double-submit, Rate Limiting, Idempotency-Key, and strict Zod validation.
+ * Protected by Auth / X-Guest-Token, CSRF double-submit, Rate Limiting, Idempotency-Key, and strict Zod validation.
  */
 paymentRouter.post(
   '/verify',
+  requireAuthOrGuestToken,
   checkoutLimiter,
   verifyCsrf,
   validateBody(verifyPaymentSchema),
