@@ -7,6 +7,7 @@ import { CartItem } from './CartItem.js';
 import { InventoryReservation } from './InventoryReservation.js';
 import { Order } from './Order.js';
 import { OrderItem } from './OrderItem.js';
+import { PaymentAttempt } from './PaymentAttempt.js';
 
 // User <-> Session (1:N)
 User.hasMany(Session, {
@@ -138,6 +139,19 @@ InventoryReservation.belongsTo(Order, {
   onDelete: 'CASCADE',
 });
 
+// Order <-> PaymentAttempt (1:N)
+Order.hasMany(PaymentAttempt, {
+  foreignKey: 'order_id',
+  as: 'paymentAttempts',
+  onDelete: 'CASCADE',
+});
+
+PaymentAttempt.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+  onDelete: 'CASCADE',
+});
+
 export {
   User,
   Session,
@@ -148,6 +162,7 @@ export {
   InventoryReservation,
   Order,
   OrderItem,
+  PaymentAttempt,
 };
 
 export default {
@@ -160,4 +175,5 @@ export default {
   InventoryReservation,
   Order,
   OrderItem,
+  PaymentAttempt,
 };

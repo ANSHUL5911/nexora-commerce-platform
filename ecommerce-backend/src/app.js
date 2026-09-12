@@ -13,6 +13,7 @@ import { productRouter } from './modules/products/product.routes.js';
 import { cartRouter } from './modules/cart/cart.routes.js';
 import { inventoryRouter } from './modules/inventory/inventory.routes.js';
 import { orderRouter } from './modules/orders/order.routes.js';
+import { paymentRouter } from './modules/payments/payment.routes.js';
 import { config } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,6 +57,9 @@ export function createApp() {
 
   // 11. Orders & OrderItems Router
   app.use('/api/orders', orderRouter);
+
+  // 12. Payments & Razorpay Router
+  app.use('/api/payments', paymentRouter);
 
   // 9. Health check endpoint
   app.get('/api/health', (req, res) => {

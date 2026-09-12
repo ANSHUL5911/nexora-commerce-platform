@@ -32,6 +32,7 @@
     "mysql2": "^3.14.1",
     "patch-package": "8.0.0",
     "pg": "^8.16.0",
+    "razorpay": "^2.9.8",
     "sequelize": "^6.6.5",
     "sequelize-cli": "^6.6.5",
     "sql.js": "1.10.3",
