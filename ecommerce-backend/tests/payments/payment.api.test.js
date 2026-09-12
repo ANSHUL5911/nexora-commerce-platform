@@ -136,6 +136,7 @@ describe('Phase 07.8 — Payment API Integration & Security Tests', () => {
         .post('/api/payments/create-order')
         .set('Cookie', userB.cookieHeader)
         .set(CSRF_HEADER_NAME, userB.csrfToken)
+        .set('Idempotency-Key', `idor_test_${crypto.randomUUID()}`)
         .send({ orderId: orderA.id });
 
       expect(res.status).toBe(404);
@@ -163,6 +164,7 @@ describe('Phase 07.8 — Payment API Integration & Security Tests', () => {
         .post('/api/payments/create-order')
         .set('Cookie', auth.cookieHeader)
         .set(CSRF_HEADER_NAME, auth.csrfToken)
+        .set('Idempotency-Key', `pay_init_${crypto.randomUUID()}`)
         .send({ orderId: order.id });
 
       expect(res.status).toBe(201);
@@ -213,6 +215,7 @@ describe('Phase 07.8 — Payment API Integration & Security Tests', () => {
         .post('/api/payments/retry')
         .set('Cookie', auth.cookieHeader)
         .set(CSRF_HEADER_NAME, auth.csrfToken)
+        .set('Idempotency-Key', `pay_retry_${crypto.randomUUID()}`)
         .send({ orderId: order.id });
 
       expect(res.status).toBe(200);
@@ -251,6 +254,7 @@ describe('Phase 07.8 — Payment API Integration & Security Tests', () => {
         .post('/api/payments/verify')
         .set('Cookie', auth.cookieHeader)
         .set(CSRF_HEADER_NAME, auth.csrfToken)
+        .set('Idempotency-Key', `pay_verify_fail_${crypto.randomUUID()}`)
         .send({
           orderId: order.id,
           razorpayOrderId: rzpOrderId,
@@ -296,6 +300,7 @@ describe('Phase 07.8 — Payment API Integration & Security Tests', () => {
         .post('/api/payments/verify')
         .set('Cookie', auth.cookieHeader)
         .set(CSRF_HEADER_NAME, auth.csrfToken)
+        .set('Idempotency-Key', `pay_verify_succ_${crypto.randomUUID()}`)
         .send({
           orderId: order.id,
           razorpayOrderId: rzpOrderId,

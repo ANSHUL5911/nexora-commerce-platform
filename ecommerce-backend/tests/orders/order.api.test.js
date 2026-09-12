@@ -205,8 +205,8 @@ describe('Phase 07.7 — Order API Integration & Security Tests', () => {
 
   describe('4. Anti-IDOR Authorization Defenses', () => {
     it('returns sanitized 404 ORDER_NOT_FOUND when User B attempts to access User A order', async () => {
-      const userA = await createAndLoginUser({ email: 'userA@example.com' });
-      const userB = await createAndLoginUser({ email: 'userB@example.com' });
+      const userA = await createAndLoginUser();
+      const userB = await createAndLoginUser();
 
       const product = await createTestProduct();
       const order = await createTestOrder({ userId: userA.user.id });
@@ -230,8 +230,8 @@ describe('Phase 07.7 — Order API Integration & Security Tests', () => {
     });
 
     it('order listing is strictly scoped to the authenticated customer', async () => {
-      const userA = await createAndLoginUser({ email: 'userA2@example.com' });
-      const userB = await createAndLoginUser({ email: 'userB2@example.com' });
+      const userA = await createAndLoginUser();
+      const userB = await createAndLoginUser();
 
       await createTestOrder({ userId: userA.user.id });
       await createTestOrder({ userId: userA.user.id });
@@ -265,6 +265,7 @@ describe('Phase 07.7 — Order API Integration & Security Tests', () => {
         .post('/api/orders')
         .set('Cookie', auth.cookieHeader)
         .set(CSRF_HEADER_NAME, auth.csrfToken)
+        .set('Idempotency-Key', `order_key_${crypto.randomUUID()}`)
         .send({
           shippingAddress: validAddress,
           shippingMethod: 'STANDARD',

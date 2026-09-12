@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../auth/auth.middleware.js';
 import { verifyCsrf } from '../auth/csrf.js';
+import { requireIdempotency } from '../idempotency/idempotency.middleware.js';
 import {
   createOrderSchema,
   orderIdParamSchema,
@@ -23,14 +24,16 @@ orderRouter.use(requireAuth);
 /**
  * POST /api/orders
  * Create an order from the authenticated user's cart.
- * Requires Double-Submit CSRF token validation and strict Zod payload validation.
+ * Requires Double-Submit CSRF token validation, Idempotency-Key validation, and strict Zod payload validation.
  */
 orderRouter.post(
   '/',
   verifyCsrf,
   validateBody(createOrderSchema),
+  requireIdempotency,
   createOrder
 );
+
 
 /**
  * GET /api/orders

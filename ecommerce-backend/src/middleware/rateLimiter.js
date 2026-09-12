@@ -26,6 +26,8 @@ export const generalLimiter = rateLimit({
   max: config.RATE_LIMIT_MAX_GENERAL,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
   handler: createRateLimitHandler('General rate limit exceeded. Please wait before making more requests.'),
 });
 
@@ -38,7 +40,7 @@ export const authLimiter = rateLimit({
   max: config.RATE_LIMIT_MAX_AUTH, // 5 requests / min / IP
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false, default: false },
+  validate: false,
   keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
   handler: createRateLimitHandler('Too many authentication attempts. Please try again in 1 minute.'),
 });
@@ -52,6 +54,8 @@ export const checkoutLimiter = rateLimit({
   max: config.RATE_LIMIT_MAX_CHECKOUT,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
   handler: createRateLimitHandler('Checkout rate limit exceeded. Please wait before attempting checkout again.'),
 });
 
@@ -64,6 +68,8 @@ export const guestLimiter = rateLimit({
   max: config.RATE_LIMIT_MAX_GUEST,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
+  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
   handler: createRateLimitHandler('Guest action rate limit exceeded. Please try again later.'),
 });
 

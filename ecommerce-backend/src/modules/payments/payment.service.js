@@ -7,6 +7,7 @@ import { InventoryReservation } from '../../models/InventoryReservation.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { OrderNotFoundError } from '../orders/order.errors.js';
 import { inventoryService } from '../inventory/inventory.service.js';
+import { idempotencyRepository } from '../idempotency/idempotency.repository.js';
 import { paymentRepository } from './payment.repository.js';
 import { razorpayGateway } from './razorpay.gateway.js';
 import {
@@ -37,16 +38,18 @@ export const paymentService = {
    * @param {{
    *   orderId: string,
    *   userId?: string,
-   *   role?: string
+   *   role?: string,
+   *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
    * }} params
    * @returns {Promise<ReturnType<typeof toPaymentInitiationDTO>>}
    */
-  async initiatePayment({ orderId, userId, role }) {
+  async initiatePayment({ orderId, userId, role, idempotencyRecord }) {
     // ----------------------------------------------------
     // PHASE A: Database Transaction (Strictly BEFORE Gateway)
     // ----------------------------------------------------
     let createdAttemptId;
     let orderTotalPaise;
+    let existingAttemptToReuse;
 
     await sequelize.transaction(async (tx) => {
       // 1. Lock Order row FOR UPDATE
@@ -115,6 +118,18 @@ export const paymentService = {
         );
       }
 
+      // If idempotency record is already linked to an existing attempt with razorpay_order_id, reuse it!
+      if (idempotencyRecord?.payment_attempt_id) {
+        const linkedAttempt = await paymentRepository.findPaymentAttemptById(
+          idempotencyRecord.payment_attempt_id,
+          { transaction: tx, lock: true }
+        );
+        if (linkedAttempt && linkedAttempt.razorpay_order_id) {
+          existingAttemptToReuse = linkedAttempt;
+          return;
+        }
+      }
+
       // 6. Deterministically calculate next attempt number under Order lock
       const maxAttempt = await paymentRepository.getMaxAttemptNumber(orderId, {
         transaction: tx,
@@ -139,7 +154,36 @@ export const paymentService = {
       );
 
       createdAttemptId = paymentAttempt.id;
+
+      // Link intermediate entity references to IdempotencyRecord inside Phase A transaction
+      if (idempotencyRecord) {
+        await idempotencyRepository.linkEntities(
+          idempotencyRecord.id,
+          { orderId, paymentAttemptId: createdAttemptId },
+          { transaction: tx }
+        );
+      }
     });
+
+    // If an existing attempt was deterministically recovered
+    if (existingAttemptToReuse) {
+      const recoveredDTO = toPaymentInitiationDTO(existingAttemptToReuse, config.RAZORPAY_KEY_ID);
+      if (idempotencyRecord) {
+        await idempotencyRepository.completeRecord(idempotencyRecord.id, {
+          responseCode: 201,
+          responseBody: {
+            success: true,
+            data: recoveredDTO,
+            meta: {
+              timestamp: new Date().toISOString(),
+            },
+          },
+          orderId,
+          paymentAttemptId: existingAttemptToReuse.id,
+        });
+      }
+      return recoveredDTO;
+    }
 
     // ----------------------------------------------------
     // PHASE B: External Gateway Call (Strictly AFTER Commit)
@@ -169,6 +213,14 @@ export const paymentService = {
         PAYMENT_FAILURE_REASON.GATEWAY_ERROR
       );
 
+      if (idempotencyRecord) {
+        try {
+          await idempotencyRepository.markFailedRetryable(idempotencyRecord.id);
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+
       throw new RazorpayGatewayError(
         'Failed to initialize payment gateway order.',
         { originalError: gatewayErr.message }
@@ -191,9 +243,26 @@ export const paymentService = {
     }
 
     const updatedAttempt = await paymentRepository.findPaymentAttemptById(createdAttemptId);
+    const initiationDTO = toPaymentInitiationDTO(updatedAttempt, config.RAZORPAY_KEY_ID);
 
-    return toPaymentInitiationDTO(updatedAttempt, config.RAZORPAY_KEY_ID);
+    if (idempotencyRecord) {
+      await idempotencyRepository.completeRecord(idempotencyRecord.id, {
+        responseCode: 201,
+        responseBody: {
+          success: true,
+          data: initiationDTO,
+          meta: {
+            timestamp: new Date().toISOString(),
+          },
+        },
+        orderId,
+        paymentAttemptId: createdAttemptId,
+      });
+    }
+
+    return initiationDTO;
   },
+
 
   /**
    * Retry payment on an existing PENDING_PAYMENT order.
@@ -203,12 +272,13 @@ export const paymentService = {
    * @param {{
    *   orderId: string,
    *   userId?: string,
-   *   role?: string
+   *   role?: string,
+   *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
    * }} params
    * @returns {Promise<ReturnType<typeof toPaymentInitiationDTO>>}
    */
-  async retryPayment({ orderId, userId, role }) {
-    return this.initiatePayment({ orderId, userId, role });
+  async retryPayment({ orderId, userId, role, idempotencyRecord }) {
+    return this.initiatePayment({ orderId, userId, role, idempotencyRecord });
   },
 
   /**
@@ -230,7 +300,8 @@ export const paymentService = {
    *   paymentAttemptId?: string,
    *   razorpayOrderId?: string,
    *   razorpayPaymentId: string,
-   *   transaction?: import('sequelize').Transaction
+   *   transaction?: import('sequelize').Transaction,
+   *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
    * }} params
    * @returns {Promise<{ settled: boolean, order: Order, paymentAttempt: PaymentAttempt }>}
    */
@@ -240,6 +311,7 @@ export const paymentService = {
     razorpayOrderId,
     razorpayPaymentId,
     transaction: externalTx,
+    idempotencyRecord,
   }) {
     const executeSettlement = async (tx) => {
       // 1. Lock Order row FOR UPDATE
@@ -276,6 +348,27 @@ export const paymentService = {
           orderId: order.id,
           paymentAttemptId: paymentAttempt.id,
         });
+
+        if (idempotencyRecord) {
+          const verificationDTO = toPaymentVerificationDTO(order, paymentAttempt);
+          await idempotencyRepository.completeRecord(
+            idempotencyRecord.id,
+            {
+              responseCode: 200,
+              responseBody: {
+                success: true,
+                data: verificationDTO,
+                meta: {
+                  timestamp: new Date().toISOString(),
+                },
+              },
+              orderId: order.id,
+              paymentAttemptId: paymentAttempt.id,
+            },
+            { transaction: tx }
+          );
+        }
+
         return { settled: true, order, paymentAttempt };
       }
 
@@ -339,6 +432,27 @@ export const paymentService = {
       await order.reload({ transaction: tx });
       await paymentAttempt.reload({ transaction: tx });
 
+      // 10. Transactionally complete IdempotencyRecord inside same settlement tx
+      if (idempotencyRecord) {
+        const verificationDTO = toPaymentVerificationDTO(order, paymentAttempt);
+        await idempotencyRepository.completeRecord(
+          idempotencyRecord.id,
+          {
+            responseCode: 200,
+            responseBody: {
+              success: true,
+              data: verificationDTO,
+              meta: {
+                timestamp: new Date().toISOString(),
+              },
+            },
+            orderId: order.id,
+            paymentAttemptId: paymentAttempt.id,
+          },
+          { transaction: tx }
+        );
+      }
+
       logger.info('Payment settlement completed successfully', {
         orderId: order.id,
         paymentAttemptId: paymentAttempt.id,
@@ -370,7 +484,8 @@ export const paymentService = {
    *   razorpayPaymentId: string,
    *   razorpaySignature: string,
    *   userId?: string,
-   *   role?: string
+   *   role?: string,
+   *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
    * }} params
    * @returns {Promise<ReturnType<typeof toPaymentVerificationDTO>>}
    */
@@ -381,6 +496,7 @@ export const paymentService = {
     razorpaySignature,
     userId,
     role,
+    idempotencyRecord,
   }) {
     // 1. Ownership & Anti-IDOR verification
     const order = await orderRepository.findOrderById(orderId);
@@ -484,6 +600,7 @@ export const paymentService = {
         paymentAttemptId: paymentAttempt.id,
         razorpayPaymentId,
         razorpayOrderId,
+        idempotencyRecord,
       });
 
     return toPaymentVerificationDTO(settledOrder, settledAttempt);
@@ -491,3 +608,4 @@ export const paymentService = {
 };
 
 export default paymentService;
+

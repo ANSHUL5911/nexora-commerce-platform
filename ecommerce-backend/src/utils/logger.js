@@ -21,7 +21,13 @@ const SENSITIVE_KEYS = new Set([
   'expiry',
   'razorpay_signature',
   'signature',
+  'idempotency_key',
+  'idempotencykey',
+  'idempotency-key',
+  'request_hash',
+  'requesthash',
 ]);
+
 
 /**
  * Deeply redacts sensitive keys from log context.

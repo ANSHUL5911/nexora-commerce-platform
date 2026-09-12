@@ -274,6 +274,7 @@ describe('Phase 07.9 — Webhook Ingestion API & Concurrency Race Tests', () => 
           .post('/api/payments/verify')
           .set('Cookie', cookieHeader)
           .set(CSRF_HEADER_NAME, csrfToken)
+          .set('Idempotency-Key', `verify_race_${crypto.randomUUID()}`)
           .send({
             orderId: order.id,
             razorpayOrderId,

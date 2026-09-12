@@ -6,7 +6,9 @@ import { orderService } from './order.service.js';
  */
 export async function createOrder(req, res, next) {
   try {
-    const orderDTO = await orderService.createOrderFromCart(req.user.id, req.body);
+    const orderDTO = await orderService.createOrderFromCart(req.user.id, req.body, {
+      idempotencyRecord: req.idempotencyRecord,
+    });
     return res.status(201).json({
       success: true,
       data: orderDTO,
@@ -15,6 +17,7 @@ export async function createOrder(req, res, next) {
     return next(err);
   }
 }
+
 
 /**
  * Controller to retrieve an order by ID for the authenticated user.

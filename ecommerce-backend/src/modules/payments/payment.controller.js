@@ -12,6 +12,7 @@ export const paymentController = {
         orderId,
         userId: req.user?.id,
         role: req.user?.role,
+        idempotencyRecord: req.idempotencyRecord,
       });
 
       res.status(201).json({
@@ -38,6 +39,7 @@ export const paymentController = {
         orderId,
         userId: req.user?.id,
         role: req.user?.role,
+        idempotencyRecord: req.idempotencyRecord,
       });
 
       res.status(200).json({
@@ -67,6 +69,7 @@ export const paymentController = {
         razorpaySignature,
         userId: req.user?.id,
         role: req.user?.role,
+        idempotencyRecord: req.idempotencyRecord,
       });
 
       res.status(200).json({
@@ -82,5 +85,6 @@ export const paymentController = {
     }
   },
 };
+
 
 export default paymentController;

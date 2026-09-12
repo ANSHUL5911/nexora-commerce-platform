@@ -9,6 +9,7 @@ import { Order } from './Order.js';
 import { OrderItem } from './OrderItem.js';
 import { PaymentAttempt } from './PaymentAttempt.js';
 import { PaymentEvent } from './PaymentEvent.js';
+import { IdempotencyRecord } from './IdempotencyRecord.js';
 
 // User <-> Session (1:N)
 User.hasMany(Session, {
@@ -179,6 +180,32 @@ PaymentEvent.belongsTo(PaymentAttempt, {
   onDelete: 'SET NULL',
 });
 
+// Order <-> IdempotencyRecord (1:N)
+Order.hasMany(IdempotencyRecord, {
+  foreignKey: 'order_id',
+  as: 'idempotencyRecords',
+  onDelete: 'SET NULL',
+});
+
+IdempotencyRecord.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+  onDelete: 'SET NULL',
+});
+
+// PaymentAttempt <-> IdempotencyRecord (1:N)
+PaymentAttempt.hasMany(IdempotencyRecord, {
+  foreignKey: 'payment_attempt_id',
+  as: 'idempotencyRecords',
+  onDelete: 'SET NULL',
+});
+
+IdempotencyRecord.belongsTo(PaymentAttempt, {
+  foreignKey: 'payment_attempt_id',
+  as: 'paymentAttempt',
+  onDelete: 'SET NULL',
+});
+
 export {
   User,
   Session,
@@ -191,6 +218,7 @@ export {
   OrderItem,
   PaymentAttempt,
   PaymentEvent,
+  IdempotencyRecord,
 };
 
 export default {
@@ -205,4 +233,6 @@ export default {
   OrderItem,
   PaymentAttempt,
   PaymentEvent,
+  IdempotencyRecord,
 };
+

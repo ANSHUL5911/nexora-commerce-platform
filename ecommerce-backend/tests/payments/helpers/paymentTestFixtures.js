@@ -8,9 +8,11 @@ import {
   InventoryReservation,
   PaymentAttempt,
   PaymentEvent,
+  IdempotencyRecord,
 } from '../../../src/models/index.js';
 import { sequelize } from '../../../src/config/database.js';
 import { config } from '../../../src/config/env.js';
+
 
 export async function createTestUser({
   id = crypto.randomUUID(),
@@ -225,9 +227,35 @@ export function generateCapturedWebhookPayload({
   };
 }
 
+export async function createTestIdempotencyRecord({
+  id = crypto.randomUUID(),
+  idempotencyKey = `key_${crypto.randomUUID()}`,
+  requestPath = '/api/orders',
+  status = 'IN_PROGRESS',
+  requestHash = crypto.createHash('sha256').update(crypto.randomUUID()).digest('hex'),
+  orderId = null,
+  paymentAttemptId = null,
+  responseCode = null,
+  responseBody = null,
+  expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000),
+} = {}) {
+  return IdempotencyRecord.create({
+    id,
+    idempotency_key: idempotencyKey,
+    request_path: requestPath,
+    status,
+    request_hash: requestHash,
+    order_id: orderId,
+    payment_attempt_id: paymentAttemptId,
+    response_code: responseCode,
+    response_body: responseBody,
+    expires_at: expiresAt,
+  });
+}
+
 export async function cleanupPaymentTables() {
   await sequelize.query(
-    'TRUNCATE users, products, orders, order_items, inventory_reservations, carts, cart_items, payment_attempts, payment_events CASCADE;'
+    'TRUNCATE users, products, orders, order_items, inventory_reservations, carts, cart_items, payment_attempts, payment_events, idempotency_records CASCADE;'
   );
 }
 
@@ -239,7 +267,9 @@ export default {
   createTestReservation,
   createTestPaymentAttempt,
   createTestPaymentEvent,
+  createTestIdempotencyRecord,
   generateWebhookSignature,
   generateCapturedWebhookPayload,
   cleanupPaymentTables,
 };
+

@@ -5,6 +5,7 @@ import { Cart, CartItem, Product } from '../../models/index.js';
 import { orderRepository } from './order.repository.js';
 import { cartRepository } from '../cart/cart.repository.js';
 import { inventoryService } from '../inventory/inventory.service.js';
+import { idempotencyRepository } from '../idempotency/idempotency.repository.js';
 import { toOrderDTO } from './order.dto.js';
 import {
   ORDER_STATUS,
@@ -38,10 +39,17 @@ export const orderService = {
    *   },
    *   shippingMethod: string
    * }} orderInput
-   * @param {{ transaction?: import('sequelize').Transaction }} [options]
+   * @param {{
+   *   transaction?: import('sequelize').Transaction,
+   *   idempotencyRecord?: import('../../models/IdempotencyRecord.js').IdempotencyRecord
+   * }} [options]
    * @returns {Promise<ReturnType<typeof toOrderDTO>>}
    */
-  async createOrderFromCart(userId, { shippingAddress, shippingMethod }, { transaction: externalTx } = {}) {
+  async createOrderFromCart(
+    userId,
+    { shippingAddress, shippingMethod },
+    { transaction: externalTx, idempotencyRecord } = {}
+  ) {
     if (!userId) {
       throw new ValidationError('Authenticated user ID is required to create an order.');
     }
@@ -187,14 +195,44 @@ export const orderService = {
         includeItems: true,
       });
 
-      return toOrderDTO(createdOrderWithItems);
+      const orderDTO = toOrderDTO(createdOrderWithItems);
+
+      // 11. Transactionally complete IdempotencyRecord inside same tx
+      if (idempotencyRecord) {
+        await idempotencyRepository.completeRecord(
+          idempotencyRecord.id,
+          {
+            responseCode: 201,
+            responseBody: {
+              success: true,
+              data: orderDTO,
+            },
+            orderId: order.id,
+          },
+          { transaction: tx }
+        );
+      }
+
+      return orderDTO;
     };
 
-    if (externalTx) {
-      return executeInTransaction(externalTx);
+    try {
+      if (externalTx) {
+        return await executeInTransaction(externalTx);
+      }
+      return await sequelize.transaction(executeInTransaction);
+    } catch (err) {
+      if (idempotencyRecord) {
+        try {
+          await idempotencyRepository.markFailedRetryable(idempotencyRecord.id);
+        } catch {
+          // ignore cleanup errors and throw primary error
+        }
+      }
+      throw err;
     }
-    return sequelize.transaction(executeInTransaction);
   },
+
 
   /**
    * Retrieve an Order by ID with strict Anti-IDOR ownership verification.
