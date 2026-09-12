@@ -8,6 +8,7 @@ import { InventoryReservation } from './InventoryReservation.js';
 import { Order } from './Order.js';
 import { OrderItem } from './OrderItem.js';
 import { PaymentAttempt } from './PaymentAttempt.js';
+import { PaymentEvent } from './PaymentEvent.js';
 
 // User <-> Session (1:N)
 User.hasMany(Session, {
@@ -152,6 +153,32 @@ PaymentAttempt.belongsTo(Order, {
   onDelete: 'CASCADE',
 });
 
+// Order <-> PaymentEvent (1:N)
+Order.hasMany(PaymentEvent, {
+  foreignKey: 'order_id',
+  as: 'paymentEvents',
+  onDelete: 'SET NULL',
+});
+
+PaymentEvent.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+  onDelete: 'SET NULL',
+});
+
+// PaymentAttempt <-> PaymentEvent (1:N)
+PaymentAttempt.hasMany(PaymentEvent, {
+  foreignKey: 'payment_attempt_id',
+  as: 'paymentEvents',
+  onDelete: 'SET NULL',
+});
+
+PaymentEvent.belongsTo(PaymentAttempt, {
+  foreignKey: 'payment_attempt_id',
+  as: 'paymentAttempt',
+  onDelete: 'SET NULL',
+});
+
 export {
   User,
   Session,
@@ -163,6 +190,7 @@ export {
   Order,
   OrderItem,
   PaymentAttempt,
+  PaymentEvent,
 };
 
 export default {
@@ -176,4 +204,5 @@ export default {
   Order,
   OrderItem,
   PaymentAttempt,
+  PaymentEvent,
 };

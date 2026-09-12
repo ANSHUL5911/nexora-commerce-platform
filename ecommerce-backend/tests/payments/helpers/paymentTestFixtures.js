@@ -7,8 +7,10 @@ import {
   OrderItem,
   InventoryReservation,
   PaymentAttempt,
+  PaymentEvent,
 } from '../../../src/models/index.js';
 import { sequelize } from '../../../src/config/database.js';
+import { config } from '../../../src/config/env.js';
 
 export async function createTestUser({
   id = crypto.randomUUID(),
@@ -152,9 +154,80 @@ export async function createTestPaymentAttempt({
   });
 }
 
+export async function createTestPaymentEvent({
+  id = crypto.randomUUID(),
+  eventId = `evt_${crypto.randomBytes(8).toString('hex')}`,
+  eventType = 'payment.captured',
+  orderId = null,
+  paymentAttemptId = null,
+  processingStatus = 'RECEIVED',
+  metadataJson = null,
+} = {}) {
+  return PaymentEvent.create({
+    id,
+    event_id: eventId,
+    event_type: eventType,
+    order_id: orderId,
+    payment_attempt_id: paymentAttemptId,
+    processing_status: processingStatus,
+    metadata_json: metadataJson,
+  });
+}
+
+export function generateWebhookSignature(
+  rawBody,
+  secret = config.RAZORPAY_WEBHOOK_SECRET
+) {
+  return crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+}
+
+export function generateCapturedWebhookPayload({
+  eventId = `evt_${crypto.randomBytes(8).toString('hex')}`,
+  razorpayPaymentId = `pay_${crypto.randomBytes(8).toString('hex')}`,
+  razorpayOrderId = `order_${crypto.randomBytes(8).toString('hex')}`,
+  amountPaise = 510000,
+  currency = 'INR',
+  status = 'captured',
+} = {}) {
+  return {
+    entity: 'event',
+    account_id: 'acc_test123',
+    event: 'payment.captured',
+    contains: ['payment'],
+    payload: {
+      payment: {
+        entity: {
+          id: razorpayPaymentId,
+          entity: 'payment',
+          amount: amountPaise,
+          currency,
+          status,
+          order_id: razorpayOrderId,
+          invoice_id: null,
+          international: false,
+          method: 'card',
+          amount_refunded: 0,
+          refund_status: null,
+          captured: true,
+          description: 'Payment for order',
+          card_id: null,
+          bank: null,
+          wallet: null,
+          vpa: null,
+          email: 'customer@example.com',
+          contact: '+919876543210',
+          created_at: Math.floor(Date.now() / 1000),
+        },
+      },
+    },
+    created_at: Math.floor(Date.now() / 1000),
+    id: eventId,
+  };
+}
+
 export async function cleanupPaymentTables() {
   await sequelize.query(
-    'TRUNCATE users, products, orders, order_items, inventory_reservations, carts, cart_items, payment_attempts CASCADE;'
+    'TRUNCATE users, products, orders, order_items, inventory_reservations, carts, cart_items, payment_attempts, payment_events CASCADE;'
   );
 }
 
@@ -165,5 +238,8 @@ export default {
   createTestOrderItem,
   createTestReservation,
   createTestPaymentAttempt,
+  createTestPaymentEvent,
+  generateWebhookSignature,
+  generateCapturedWebhookPayload,
   cleanupPaymentTables,
 };

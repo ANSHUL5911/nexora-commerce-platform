@@ -8,10 +8,12 @@ export class RazorpayGateway {
   constructor({
     keyId = config.RAZORPAY_KEY_ID,
     keySecret = config.RAZORPAY_KEY_SECRET,
+    webhookSecret = config.RAZORPAY_WEBHOOK_SECRET,
     client = null,
   } = {}) {
     this.keyId = keyId;
     this.keySecret = keySecret;
+    this.webhookSecret = webhookSecret;
     this.client =
       client ||
       new Razorpay({
@@ -87,7 +89,7 @@ export class RazorpayGateway {
   }
 
   /**
-   * Timing-safe HMAC-SHA256 Razorpay signature verification.
+   * Timing-safe HMAC-SHA256 Razorpay payment signature verification (frontend verify endpoint).
    * Never leaks raw signatures or secrets to logs or exceptions.
    *
    * @param {{
@@ -119,6 +121,47 @@ export class RazorpayGateway {
       return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
     } catch (err) {
       logger.warn('Razorpay signature comparison error', {
+        error: err.message,
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Timing-safe HMAC-SHA256 Razorpay webhook signature verification over raw request body.
+   *
+   * @param {{
+   *   rawBody: Buffer | string,
+   *   signature: string,
+   *   secret?: string
+   * }} params
+   * @returns {boolean}
+   */
+  verifyWebhookSignature({
+    rawBody,
+    signature,
+    secret = this.webhookSecret,
+  }) {
+    if (!rawBody || !signature || !secret) {
+      return false;
+    }
+
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(rawBody)
+        .digest('hex');
+
+      const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+      const signatureBuffer = Buffer.from(signature, 'utf8');
+
+      if (expectedBuffer.length !== signatureBuffer.length) {
+        return false;
+      }
+
+      return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+    } catch (err) {
+      logger.warn('Razorpay webhook signature comparison error', {
         error: err.message,
       });
       return false;

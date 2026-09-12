@@ -24,6 +24,24 @@ export class InvalidPaymentSignatureError extends AppError {
   }
 }
 
+export class WebhookSignatureVerificationError extends AppError {
+  constructor(message = 'Invalid Razorpay webhook signature.', details = null) {
+    super(message, 400, 'INVALID_WEBHOOK_SIGNATURE', details);
+  }
+}
+
+export class WebhookPayloadValidationError extends AppError {
+  constructor(message = 'Invalid webhook payload structure.', details = null) {
+    super(message, 400, 'INVALID_WEBHOOK_PAYLOAD', details);
+  }
+}
+
+export class PaymentEventNotFoundError extends AppError {
+  constructor(message = 'Payment event was not found.', details = null) {
+    super(message, 404, 'PAYMENT_EVENT_NOT_FOUND', details);
+  }
+}
+
 export class RazorpayGatewayError extends AppError {
   constructor(message = 'Payment gateway communication error.', details = null) {
     super(message, 502, 'GATEWAY_ERROR', details);
@@ -41,6 +59,9 @@ export default {
   OrderNotPayableError,
   PaymentVerificationError,
   InvalidPaymentSignatureError,
+  WebhookSignatureVerificationError,
+  WebhookPayloadValidationError,
+  PaymentEventNotFoundError,
   RazorpayGatewayError,
   PaymentConflictError,
 };

@@ -14,6 +14,7 @@ import { cartRouter } from './modules/cart/cart.routes.js';
 import { inventoryRouter } from './modules/inventory/inventory.routes.js';
 import { orderRouter } from './modules/orders/order.routes.js';
 import { paymentRouter } from './modules/payments/payment.routes.js';
+import { webhookRouter } from './modules/payments/webhook.routes.js';
 import { config } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,8 +33,15 @@ export function createApp() {
   // 3. Strict CORS
   app.use(corsMiddleware);
 
-  // 4. Body & Cookie parsing
-  app.use(express.json({ limit: '100kb' }));
+  // 4. Body & Cookie parsing (preserves raw buffer for webhook signature verification)
+  app.use(
+    express.json({
+      limit: '100kb',
+      verify: (req, res, buf) => {
+        req.rawBody = buf;
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: true, limit: '100kb' }));
   app.use(cookieParser());
 
@@ -60,6 +68,9 @@ export function createApp() {
 
   // 12. Payments & Razorpay Router
   app.use('/api/payments', paymentRouter);
+
+  // 13. Asynchronous Razorpay Webhook Router
+  app.use('/api/webhooks', webhookRouter);
 
   // 9. Health check endpoint
   app.get('/api/health', (req, res) => {
