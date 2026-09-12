@@ -4,6 +4,7 @@ import { AuditLog } from './AuditLog.js';
 import { Product } from './Product.js';
 import { Cart } from './Cart.js';
 import { CartItem } from './CartItem.js';
+import { InventoryReservation } from './InventoryReservation.js';
 
 // User <-> Session (1:N)
 User.hasMany(Session, {
@@ -70,5 +71,19 @@ CartItem.belongsTo(Product, {
   onDelete: 'RESTRICT',
 });
 
-export { User, Session, AuditLog, Product, Cart, CartItem };
-export default { User, Session, AuditLog, Product, Cart, CartItem };
+// Product <-> InventoryReservation (1:N)
+Product.hasMany(InventoryReservation, {
+  foreignKey: 'product_id',
+  as: 'reservations',
+  onDelete: 'RESTRICT',
+});
+
+InventoryReservation.belongsTo(Product, {
+  foreignKey: 'product_id',
+  as: 'product',
+  onDelete: 'RESTRICT',
+});
+
+export { User, Session, AuditLog, Product, Cart, CartItem, InventoryReservation };
+export default { User, Session, AuditLog, Product, Cart, CartItem, InventoryReservation };
+
