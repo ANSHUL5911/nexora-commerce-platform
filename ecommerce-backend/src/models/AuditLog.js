@@ -1,4 +1,5 @@
 import { DataTypes, Model } from 'sequelize';
+import crypto from 'crypto';
 import { sequelize } from '../config/database.js';
 
 export class AuditLog extends Model {}
@@ -9,6 +10,7 @@ AuditLog.init(
       type: DataTypes.UUID,
       primaryKey: true,
       allowNull: false,
+      defaultValue: () => crypto.randomUUID(),
     },
     actor_id: {
       type: DataTypes.UUID,

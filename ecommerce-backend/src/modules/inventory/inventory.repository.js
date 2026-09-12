@@ -295,6 +295,38 @@ export const inventoryRepository = {
     );
     return affectedCount;
   },
+
+  /**
+   * Atomically increment Product.stock_quantity during explicit restock.
+   * Preserves mathematical invariants and checks row existence.
+   *
+   * @param {string} productId
+   * @param {number} quantity
+   * @param {{ transaction: import('sequelize').Transaction }} options
+   * @returns {Promise<number>} Number of updated rows (must be 1)
+   */
+  async incrementProductStockQuantity(productId, quantity, { transaction }) {
+    const [, affectedCount] = await sequelize.query(
+      `UPDATE products
+       SET stock_quantity = stock_quantity + :quantity,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = :productId
+         AND is_deleted = false`,
+      {
+        replacements: { productId, quantity },
+        type: QueryTypes.UPDATE,
+        transaction,
+      }
+    );
+
+    if (affectedCount === 0) {
+      throw new InventoryInvariantError(
+        `Failed to increment stock quantity: product ${productId} not found or deleted.`
+      );
+    }
+
+    return affectedCount;
+  },
 };
 
 export default inventoryRepository;

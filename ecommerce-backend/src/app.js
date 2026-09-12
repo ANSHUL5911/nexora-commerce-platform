@@ -16,6 +16,7 @@ import { orderRouter } from './modules/orders/order.routes.js';
 import { checkoutRouter } from './modules/checkout/checkout.routes.js';
 import { paymentRouter } from './modules/payments/payment.routes.js';
 import { webhookRouter } from './modules/payments/webhook.routes.js';
+import { adminRouter } from './modules/admin/admin.routes.js';
 import { config } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -76,7 +77,10 @@ export function createApp() {
   // 14. Asynchronous Razorpay Webhook Router
   app.use('/api/webhooks', webhookRouter);
 
-  // 9. Health check endpoint
+  // 15. Admin Management Router (Refunds, Restocking)
+  app.use('/api/admin', adminRouter);
+
+  // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.status(200).json({
       status: 'ok',

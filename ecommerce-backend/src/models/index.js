@@ -10,6 +10,7 @@ import { OrderItem } from './OrderItem.js';
 import { PaymentAttempt } from './PaymentAttempt.js';
 import { PaymentEvent } from './PaymentEvent.js';
 import { IdempotencyRecord } from './IdempotencyRecord.js';
+import { StockRestockLog } from './StockRestockLog.js';
 
 // User <-> Session (1:N)
 User.hasMany(Session, {
@@ -206,6 +207,45 @@ IdempotencyRecord.belongsTo(PaymentAttempt, {
   onDelete: 'SET NULL',
 });
 
+// Order <-> StockRestockLog (1:N)
+Order.hasMany(StockRestockLog, {
+  foreignKey: 'order_id',
+  as: 'restockLogs',
+  onDelete: 'SET NULL',
+});
+
+StockRestockLog.belongsTo(Order, {
+  foreignKey: 'order_id',
+  as: 'order',
+  onDelete: 'SET NULL',
+});
+
+// Product <-> StockRestockLog (1:N)
+Product.hasMany(StockRestockLog, {
+  foreignKey: 'product_id',
+  as: 'restockLogs',
+  onDelete: 'RESTRICT',
+});
+
+StockRestockLog.belongsTo(Product, {
+  foreignKey: 'product_id',
+  as: 'product',
+  onDelete: 'RESTRICT',
+});
+
+// User <-> StockRestockLog (1:N)
+User.hasMany(StockRestockLog, {
+  foreignKey: 'initiated_by',
+  as: 'restockLogs',
+  onDelete: 'RESTRICT',
+});
+
+StockRestockLog.belongsTo(User, {
+  foreignKey: 'initiated_by',
+  as: 'actor',
+  onDelete: 'RESTRICT',
+});
+
 export {
   User,
   Session,
@@ -219,6 +259,7 @@ export {
   PaymentAttempt,
   PaymentEvent,
   IdempotencyRecord,
+  StockRestockLog,
 };
 
 export default {
@@ -234,5 +275,6 @@ export default {
   PaymentAttempt,
   PaymentEvent,
   IdempotencyRecord,
+  StockRestockLog,
 };
 

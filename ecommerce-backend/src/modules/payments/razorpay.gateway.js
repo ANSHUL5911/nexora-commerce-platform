@@ -89,6 +89,51 @@ export class RazorpayGateway {
   }
 
   /**
+   * Issue a refund on Razorpay Gateway for a settled payment.
+   *
+   * @param {{
+   *   paymentId: string,
+   *   amountPaise: number,
+   *   notes?: Record<string, string>,
+   *   speed?: string
+   * }} params
+   * @returns {Promise<{ id: string, payment_id: string, amount: number, currency: string, status: string }>}
+   */
+  async refundPayment({ paymentId, amountPaise, notes = {}, speed = 'normal' }) {
+    try {
+      logger.info('Initiating Razorpay refund on gateway', {
+        paymentId,
+        amountPaise,
+        speed,
+      });
+
+      const refund = await this.client.payments.refund(paymentId, {
+        amount: Math.round(amountPaise),
+        notes,
+        speed,
+      });
+
+      logger.info('Razorpay refund created successfully', {
+        refundId: refund.id,
+        paymentId: refund.payment_id,
+        status: refund.status,
+      });
+
+      return refund;
+    } catch (err) {
+      logger.error('Razorpay refund failed', {
+        paymentId,
+        error: err.message,
+        statusCode: err.statusCode,
+      });
+      throw new RazorpayGatewayError(
+        'Failed to process refund on payment gateway.',
+        { gatewayError: err.message }
+      );
+    }
+  }
+
+  /**
    * Timing-safe HMAC-SHA256 Razorpay payment signature verification (frontend verify endpoint).
    * Never leaks raw signatures or secrets to logs or exceptions.
    *
