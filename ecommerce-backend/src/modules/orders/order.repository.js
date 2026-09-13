@@ -1,4 +1,5 @@
-import { Order, OrderItem } from '../../models/index.js';
+import { Op } from 'sequelize';
+import { Order, OrderItem, User, PaymentAttempt, StockRestockLog } from '../../models/index.js';
 
 export const ORDER_PUBLIC_ATTRIBUTES = [
   'id',
@@ -28,6 +29,45 @@ export const ORDER_ITEM_PUBLIC_ATTRIBUTES = [
   'created_at',
   'updated_at',
 ];
+
+export const PAYMENT_ATTEMPT_ADMIN_ATTRIBUTES = [
+  'id',
+  'order_id',
+  'attempt_number',
+  'razorpay_order_id',
+  'razorpay_payment_id',
+  'razorpay_refund_id',
+  'status',
+  'amount_paise',
+  'created_at',
+  'updated_at',
+];
+
+export const RESTOCK_LOG_ADMIN_ATTRIBUTES = [
+  'id',
+  'order_id',
+  'product_id',
+  'quantity_restocked',
+  'initiated_by',
+  'reason',
+  'created_at',
+];
+
+export const USER_ADMIN_SUMMARY_ATTRIBUTES = [
+  'id',
+  'email',
+  'full_name',
+  'role',
+];
+
+/**
+ * Escape LIKE / iLIKE wildcard characters to prevent wildcard injection/abuse.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeLikeWildcards(str) {
+  return str.replace(/[%_\\]/g, '\\$&');
+}
 
 export const orderRepository = {
   /**
@@ -171,6 +211,151 @@ export const orderRepository = {
       }
     );
     return affectedCount;
+  },
+
+  /**
+   * Find paginated orders for administrative console with multi-parameter filtering and eager loading.
+   *
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   status?: string,
+   *   userId?: string,
+   *   search?: string,
+   *   startDate?: Date,
+   *   endDate?: Date,
+   *   transaction?: import('sequelize').Transaction
+   * }} options
+   * @returns {Promise<{ rows: Order[], count: number }>}
+   */
+  async findAllOrdersAdmin({
+    page = 1,
+    limit = 10,
+    status,
+    userId,
+    search,
+    startDate,
+    endDate,
+    transaction,
+  } = {}) {
+    const whereConditions = {};
+
+    if (status) {
+      whereConditions.order_status = status;
+    }
+
+    if (userId) {
+      whereConditions.user_id = userId;
+    }
+
+    if (startDate || endDate) {
+      whereConditions.created_at = {};
+      if (startDate) {
+        whereConditions.created_at[Op.gte] = startDate;
+      }
+      if (endDate) {
+        whereConditions.created_at[Op.lte] = endDate;
+      }
+    }
+
+    if (search && search.trim().length > 0) {
+      const sanitized = escapeLikeWildcards(search.trim());
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search.trim());
+      if (isUuid) {
+        whereConditions.id = search.trim();
+      } else {
+        whereConditions[Op.or] = [
+          { shipping_full_name: { [Op.iLike]: `%${sanitized}%` } },
+          { shipping_phone: { [Op.iLike]: `%${sanitized}%` } },
+          { shipping_city: { [Op.iLike]: `%${sanitized}%` } },
+        ];
+      }
+    }
+
+    const boundedPage = Math.max(1, page);
+    const boundedLimit = Math.min(50, Math.max(1, limit));
+    const offset = (boundedPage - 1) * boundedLimit;
+
+    const result = await Order.findAndCountAll({
+      where: whereConditions,
+      attributes: ORDER_PUBLIC_ATTRIBUTES,
+      include: [
+        {
+          model: OrderItem,
+          as: 'items',
+          attributes: ORDER_ITEM_PUBLIC_ATTRIBUTES,
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: USER_ADMIN_SUMMARY_ATTRIBUTES,
+        },
+        {
+          model: PaymentAttempt,
+          as: 'paymentAttempts',
+          attributes: PAYMENT_ATTEMPT_ADMIN_ATTRIBUTES,
+        },
+      ],
+      order: [
+        ['created_at', 'DESC'],
+        ['id', 'DESC'],
+        [{ model: OrderItem, as: 'items' }, 'created_at', 'ASC'],
+        [{ model: OrderItem, as: 'items' }, 'id', 'ASC'],
+      ],
+      limit: boundedLimit,
+      offset,
+      distinct: true,
+      transaction,
+    });
+
+    return result;
+  },
+
+  /**
+   * Find detailed order for administrative console with all related operational context.
+   *
+   * @param {string} orderId
+   * @param {{ transaction?: import('sequelize').Transaction, lock?: boolean }} [options]
+   * @returns {Promise<Order | null>}
+   */
+  async findAdminOrderById(orderId, { transaction, lock } = {}) {
+    const shouldInclude = !lock;
+    return Order.findByPk(orderId, {
+      attributes: ORDER_PUBLIC_ATTRIBUTES,
+      include: shouldInclude
+        ? [
+          {
+            model: OrderItem,
+            as: 'items',
+            attributes: ORDER_ITEM_PUBLIC_ATTRIBUTES,
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: USER_ADMIN_SUMMARY_ATTRIBUTES,
+          },
+          {
+            model: PaymentAttempt,
+            as: 'paymentAttempts',
+            attributes: PAYMENT_ATTEMPT_ADMIN_ATTRIBUTES,
+          },
+          {
+            model: StockRestockLog,
+            as: 'restockLogs',
+            attributes: RESTOCK_LOG_ADMIN_ATTRIBUTES,
+          },
+        ]
+        : [],
+      order: shouldInclude
+        ? [
+          [{ model: OrderItem, as: 'items' }, 'created_at', 'ASC'],
+          [{ model: PaymentAttempt, as: 'paymentAttempts' }, 'attempt_number', 'DESC'],
+          [{ model: StockRestockLog, as: 'restockLogs' }, 'created_at', 'DESC'],
+        ]
+        : undefined,
+      transaction,
+      lock: lock && transaction ? transaction.LOCK.UPDATE : undefined,
+    });
   },
 };
 

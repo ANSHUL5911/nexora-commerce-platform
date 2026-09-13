@@ -142,6 +142,142 @@ export const productRepository = {
       attributes: PRODUCT_PUBLIC_ATTRIBUTES,
     });
   },
+
+  /**
+   * Administrative product listing with support for filtering by active, deleted, or all statuses.
+   *
+   * @param {{
+   *   page?: number,
+   *   limit?: number,
+   *   category?: string,
+   *   search?: string,
+   *   sortBy?: string,
+   *   sortOrder?: string,
+   *   inStockOnly?: boolean,
+   *   status?: 'active' | 'deleted' | 'all'
+   * }} options
+   * @returns {Promise<{ rows: Product[], count: number }>}
+   */
+  async findAndCountAllAdmin({
+    page = 1,
+    limit = 10,
+    category,
+    search,
+    sortBy,
+    sortOrder,
+    inStockOnly = false,
+    status = 'all',
+  }) {
+    const whereConditions = {};
+
+    if (status === 'active') {
+      whereConditions.is_deleted = false;
+    } else if (status === 'deleted') {
+      whereConditions.is_deleted = true;
+    }
+    // If status === 'all', no is_deleted filter is applied
+
+    if (category) {
+      whereConditions.category = category;
+    }
+
+    if (search && search.trim().length > 0) {
+      const sanitized = escapeLikeWildcards(search.trim());
+      whereConditions[Op.or] = [
+        { name: { [Op.iLike]: `%${sanitized}%` } },
+        { description: { [Op.iLike]: `%${sanitized}%` } },
+      ];
+    }
+
+    if (inStockOnly) {
+      whereConditions[Op.and] = Sequelize.where(
+        Sequelize.literal('(stock_quantity - reserved_quantity)'),
+        Op.gt,
+        0
+      );
+    }
+
+    const order = buildDeterministicOrder(sortBy, sortOrder);
+    const offset = (page - 1) * limit;
+
+    return Product.scope('withDeleted').findAndCountAll({
+      where: whereConditions,
+      attributes: PRODUCT_PUBLIC_ATTRIBUTES,
+      order,
+      limit,
+      offset,
+    });
+  },
+
+  /**
+   * Find a single product by UUID for administrative operations (including deleted products).
+   *
+   * @param {string} id
+   * @param {{ transaction?: import('sequelize').Transaction, lock?: boolean }} [options]
+   * @returns {Promise<Product | null>}
+   */
+  async findByIdAdmin(id, { transaction, lock } = {}) {
+    return Product.scope('withDeleted').findOne({
+      where: { id },
+      attributes: PRODUCT_PUBLIC_ATTRIBUTES,
+      transaction,
+      lock: lock && transaction ? transaction.LOCK.UPDATE : undefined,
+    });
+  },
+
+  /**
+   * Create a new Product catalog item.
+   *
+   * @param {object} productData
+   * @param {{ transaction?: import('sequelize').Transaction }} [options]
+   * @returns {Promise<Product>}
+   */
+  async createProduct(productData, { transaction } = {}) {
+    return Product.create(productData, { transaction });
+  },
+
+  /**
+   * Update catalog-owned fields for an existing Product.
+   *
+   * @param {string} id
+   * @param {object} updateData
+   * @param {{ transaction?: import('sequelize').Transaction }} [options]
+   * @returns {Promise<number>}
+   */
+  async updateProduct(id, updateData, { transaction } = {}) {
+    const [affectedCount] = await Product.scope('withDeleted').update(
+      {
+        ...updateData,
+        updated_at: new Date(),
+      },
+      {
+        where: { id },
+        transaction,
+      }
+    );
+    return affectedCount;
+  },
+
+  /**
+   * Soft-delete a product by setting is_deleted = true.
+   *
+   * @param {string} id
+   * @param {{ transaction?: import('sequelize').Transaction }} [options]
+   * @returns {Promise<number>}
+   */
+  async softDeleteProduct(id, { transaction } = {}) {
+    const [affectedCount] = await Product.scope('withDeleted').update(
+      {
+        is_deleted: true,
+        updated_at: new Date(),
+      },
+      {
+        where: { id, is_deleted: false },
+        transaction,
+      }
+    );
+    return affectedCount;
+  },
 };
 
 export default productRepository;
