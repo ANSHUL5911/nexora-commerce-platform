@@ -13,18 +13,24 @@
 export function adaptProduct(product) {
   if (!product) return null;
 
+  const rawQty = product.available_quantity ?? product.availableQuantity;
+  const availableQuantity = (rawQty !== undefined && rawQty !== null && !isNaN(Number(rawQty)))
+    ? Number(rawQty)
+    : undefined;
+
   return {
     id: product.id,
     name: product.name ?? '',
     description: product.description ?? '',
-    pricePaise: Number(product.price_paise ?? 0),
+    pricePaise: Number(product.price_paise ?? product.pricePaise ?? 0),
     category: product.category ?? '',
     image: product.image_url ?? product.image ?? '',
     imageUrl: product.image_url ?? product.image ?? '',
-    availableQuantity: Number(product.available_quantity ?? 0),
+    availableQuantity,
+    available_quantity: availableQuantity,
     rating: product.rating || { stars: 4.5, count: 50 },
-    createdAt: product.created_at,
-    updatedAt: product.updated_at,
+    createdAt: product.created_at || product.createdAt,
+    updatedAt: product.updated_at || product.updatedAt,
   };
 }
 
@@ -37,17 +43,22 @@ export function adaptProduct(product) {
 export function adaptCartItem(item) {
   if (!item) return null;
 
+  const itemQty = item.available_quantity ?? item.availableQuantity;
+  const availableQuantity = (itemQty !== undefined && itemQty !== null && !isNaN(Number(itemQty)))
+    ? Number(itemQty)
+    : undefined;
+
   return {
     id: item.id,
-    cartId: item.cart_id,
-    productId: item.product_id,
+    cartId: item.cart_id || item.cartId,
+    productId: item.product_id || item.productId,
     name: item.name ?? '',
-    image: item.image_url ?? '',
-    imageUrl: item.image_url ?? '',
-    pricePaise: Number(item.price_paise ?? 0),
+    image: item.image_url ?? item.image ?? '',
+    imageUrl: item.image_url ?? item.image ?? '',
+    pricePaise: Number(item.price_paise ?? item.pricePaise ?? 0),
     quantity: Number(item.quantity ?? 1),
-    lineTotalPaise: Number(item.line_total_paise ?? 0),
-    availableQuantity: Number(item.available_quantity ?? 0),
+    lineTotalPaise: Number(item.line_total_paise ?? item.lineTotalPaise ?? 0),
+    availableQuantity,
   };
 }
 
@@ -72,11 +83,11 @@ export function adaptCart(cart) {
   const items = Array.isArray(cart.items) ? cart.items.map(adaptCartItem) : [];
   return {
     id: cart.id,
-    userId: cart.user_id,
+    userId: cart.user_id || cart.userId,
     items,
-    subtotalPaise: Number(cart.subtotal_paise ?? 0),
-    itemCount: Number(cart.item_count ?? items.length),
-    totalQuantity: Number(cart.total_quantity ?? items.reduce((sum, i) => sum + i.quantity, 0)),
+    subtotalPaise: Number(cart.subtotal_paise ?? cart.subtotalPaise ?? 0),
+    itemCount: Number(cart.item_count ?? cart.itemCount ?? items.length),
+    totalQuantity: Number(cart.total_quantity ?? cart.totalQuantity ?? items.reduce((sum, i) => sum + i.quantity, 0)),
   };
 }
 
@@ -89,7 +100,7 @@ export function adaptCart(cart) {
 export function adaptOrderItem(item) {
   if (!item) return null;
 
-  const unitPrice = Number(item.unitPricePaise ?? item.unit_price_paise ?? 0);
+  const unitPrice = Number(item.unitPricePaise ?? item.unit_price_paise ?? item.price_paise ?? item.pricePaise ?? 0);
   const qty = Number(item.quantity ?? 1);
   const lineTotal = Number(item.lineTotalPaise ?? item.line_total_paise ?? (unitPrice * qty));
 
@@ -97,9 +108,9 @@ export function adaptOrderItem(item) {
     id: item.id,
     orderId: item.orderId || item.order_id,
     productId: item.productId || item.product_id,
-    name: item.productName || item.product_name_snapshot || 'Product',
-    productName: item.productName || item.product_name_snapshot || 'Product',
-    image: item.imageUrl || item.image_url || 'images/products/athletic-cotton-socks-6-pairs.jpg',
+    name: item.productName || item.product_name || item.product_name_snapshot || item.name || 'Product',
+    productName: item.productName || item.product_name || item.product_name_snapshot || item.name || 'Product',
+    image: item.imageUrl || item.image_url || item.image || 'images/products/athletic-cotton-socks-6-pairs.jpg',
     unitPricePaise: unitPrice,
     quantity: qty,
     lineTotalPaise: lineTotal,
@@ -118,7 +129,7 @@ export function adaptOrder(order) {
   if (!order) return null;
 
   const items = Array.isArray(order.items) ? order.items.map(adaptOrderItem) : [];
-  const totalPaise = Number(order.totalPaise ?? order.totalCostPaise ?? order.total_cost_paise ?? 0);
+  const totalPaise = Number(order.totalPaise ?? order.totalCostPaise ?? order.total_cost_paise ?? order.total_paise ?? 0);
   const shippingFeePaise = Number(order.shippingFeePaise ?? order.shipping_fee_paise ?? 0);
   const subtotalPaise = Number(order.subtotalPaise ?? order.subtotal_paise ?? Math.max(0, totalPaise - shippingFeePaise));
 

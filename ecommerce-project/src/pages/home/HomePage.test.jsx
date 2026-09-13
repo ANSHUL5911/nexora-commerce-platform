@@ -15,6 +15,21 @@ vi.mock('../../api/products', () => ({
   },
 }));
 
+vi.mock('../../api/auth', () => ({
+  authApi: {
+    getCurrentUser: vi.fn().mockResolvedValue({ user: null }),
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+  },
+  default: {
+    getCurrentUser: vi.fn().mockResolvedValue({ user: null }),
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+  },
+}));
+
 describe('HomePage component', () => {
   let loadCart;
 
@@ -66,4 +81,4 @@ describe('HomePage component', () => {
         .getByText('Intermediate Size Basketball')
     ).toBeInTheDocument();
   });
-});
+});

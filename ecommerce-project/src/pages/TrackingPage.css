@@ -1,81 +1,109 @@
 .tracking-page {
-  max-width: 850px;
-  margin-top: 90px;
-  margin-bottom: 100px;
-  padding-left: 30px;
-  padding-right: 30px;
-
-  /* margin-left: auto;
-     margin-right auto;
-     Is a trick for centering an element horizontally
-     without needing a container. */
-  margin-left: auto;
-  margin-right: auto;
+  max-width: var(--container-checkout);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-16);
 }
 
-.tracking-page .back-to-orders-link {
-  display: inline-block;
-  margin-bottom: 30px;
+.tracking-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-subtle);
 }
 
-.tracking-page .delivery-date {
-  font-size: 25px;
-  font-weight: 700;
-  margin-bottom: 10px;
+.tracking-header {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--space-6);
+  margin-bottom: var(--space-8);
 }
 
-.tracking-page .product-info {
-  margin-bottom: 3px;
-}
-
-.tracking-page .product-image {
-  max-width: 150px;
-  max-height: 150px;
-  margin-top: 25px;
-  margin-bottom: 50px;
-}
-
-.tracking-page .progress-labels-container {
-  display: flex;
-  justify-content: space-between;
-  font-size: 20px;
+.tracking-delivery-date {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 500;
-  margin-bottom: 15px;
+  color: var(--color-text-primary);
+  margin-top: var(--space-2);
 }
 
-.tracking-page .current-status {
-  color: #0063FF;
+.tracking-product-preview {
+  display: flex;
+  gap: var(--space-6);
+  align-items: center;
+  margin-bottom: var(--space-10);
 }
 
-@media (max-width: 575px) {
-  .tracking-page .progress-labels-container {
-    font-size: 16px;
-  }
-}
-
-@media (max-width: 450px) {
-  .tracking-page .progress-labels-container {
-    flex-direction: column;
-    margin-bottom: 5px;
-  }
-
-  .tracking-page .progress-label {
-    margin-bottom: 3px;
-  }
-}
-
-.tracking-page .progress-bar-container {
-  height: 25px;
-  width: 100%;
-
-  border: 1px solid rgb(200, 200, 200);
-  border-radius: 50px;
+.tracking-product-img-wrap {
+  width: 100px;
+  aspect-ratio: 1 / 1;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
   overflow: hidden;
 }
 
-.tracking-page .progress-bar {
+.tracking-product-img {
+  width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, #122747, #0063FF);
-  border-radius: 50px;
-  width: 50%;
+  object-fit: cover;
+}
+
+.tracking-product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tracking-product-name {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.tracking-product-qty {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Stepper Progress Bar */
+.tracking-stepper {
+  margin-bottom: var(--space-8);
+}
+
+.tracking-labels-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.tracking-label.active {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.tracking-bar-bg {
+  height: 8px;
+  width: 100%;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tracking-bar-fill {
+  height: 100%;
+  background-color: var(--color-accent-primary);
+  border-radius: 4px;
+  transition: width 300ms ease;
+}
+
+.tracking-bar-fill.cancelled {
+  background-color: var(--color-status-error);
 }
