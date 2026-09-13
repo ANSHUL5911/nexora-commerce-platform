@@ -25,6 +25,8 @@ export function CartItemDetails({ cartItem, deleteCartItem, loadCart }) {
             setIsUpdating(false);
         } catch (err) {
             console.error('Failed to update cart item quantity:', err);
+            setQuantity(cartItem.quantity);
+            setIsUpdating(false);
         } finally {
             setLoading(false);
         }
@@ -42,42 +44,52 @@ export function CartItemDetails({ cartItem, deleteCartItem, loadCart }) {
     const productName = cartItem.name || cartItem.product?.name || 'Product';
     const productImage = cartItem.image || cartItem.imageUrl || cartItem.product?.image || cartItem.product?.imageUrl || 'images/products/athletic-cotton-socks-6-pairs.jpg';
     const pricePaise = cartItem.pricePaise ?? cartItem.product?.pricePaise ?? cartItem.product?.priceCents ?? 0;
+    const availableQty = cartItem.available_quantity ?? cartItem.product?.available_quantity;
 
     return (
-        <>
-            <img
-                className="product-image"
-                src={productImage}
-                alt={productName}
-            />
+        <div className="cart-item-row">
+            <div className="cart-item-image-wrapper">
+                <img
+                    className="cart-item-thumbnail"
+                    src={productImage}
+                    alt={productName}
+                    loading="lazy"
+                />
+            </div>
 
-            <div className="cart-item-details">
-                <div className="product-name">
-                    {productName}
+            <div className="cart-item-content">
+                <div className="cart-item-header">
+                    <h3 className="cart-item-name">{productName}</h3>
+                    <span className="cart-item-price">{formatMoney(pricePaise)}</span>
                 </div>
-                <div className="product-price">
-                    {formatMoney(pricePaise)}
-                </div>
-                <div className="product-quantity">
-                    <span>
-                        Quantity:{' '}
+
+                {availableQty !== undefined && availableQty <= 5 && availableQty > 0 && (
+                    <span className="stock-notice">Only {availableQty} left</span>
+                )}
+
+                <div className="cart-item-controls">
+                    <span className="quantity-indicator">
+                        Qty:{' '}
                         {isUpdating ? (
                             <input
                                 type="number"
                                 min="1"
-                                max="99"
-                                className="quantity-input"
+                                max="10"
+                                className="quantity-inline-input"
                                 value={quantity}
                                 onChange={(event) => setQuantity(event.target.value)}
                                 onKeyDown={handleKeyDown}
                                 disabled={loading}
+                                aria-label={`Update quantity for ${productName}`}
                             />
                         ) : (
-                            <span className="quantity-label">{cartItem.quantity}</span>
+                            <span className="quantity-value">{cartItem.quantity}</span>
                         )}
                     </span>
+
                     <button
-                        className="update-quantity-link link-primary"
+                        type="button"
+                        className="control-text-btn update-btn"
                         disabled={loading}
                         onClick={() => {
                             if (isUpdating) {
@@ -89,16 +101,18 @@ export function CartItemDetails({ cartItem, deleteCartItem, loadCart }) {
                     >
                         {loading ? 'Saving...' : (isUpdating ? 'Save' : 'Update')}
                     </button>
+
                     <button
-                        className="delete-quantity-link link-primary"
+                        type="button"
+                        className="control-text-btn delete-btn"
                         disabled={loading}
                         onClick={deleteCartItem}
+                        aria-label={`Remove ${productName} from cart`}
                     >
-                        Delete
+                        Remove
                     </button>
                 </div>
             </div>
-        </>
+        </div>
     );
 }
-

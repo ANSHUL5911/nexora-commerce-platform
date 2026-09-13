@@ -1,88 +1,142 @@
-import dayjs from 'dayjs';
+import { useState, useEffect } from 'react';
 import { CartItemDetails } from './CartItemDetails';
-import { DeliveryOptions } from './DeliveryOptions';
-import { DEFAULT_DELIVERY_OPTIONS } from './deliveryOptionsData';
 import { cartApi } from '../../api/cart';
 
-
-function DeliveryDate({ deliveryOptions, cartItem, selectedShippingMethod = 'STANDARD' }) {
-    const methodId = cartItem?.deliveryOptionId || selectedShippingMethod;
-    const selectedDeliveryOption = deliveryOptions.find(
-        (option) => option.id === methodId
-    ) || deliveryOptions[0];
-
-    const deliveryDate = selectedDeliveryOption?.estimatedDeliveryTimeMs
-        ? dayjs(selectedDeliveryOption.estimatedDeliveryTimeMs).format('dddd, MMMM D')
-        : dayjs().add(selectedDeliveryOption?.days || 5, 'day').format('dddd, MMMM D');
-
-    return (
-        <div className="delivery-date">
-            Delivery date: {deliveryDate}
-        </div>
-    );
-}
-
 export function OrderSummary({
-    deliveryOptions = DEFAULT_DELIVERY_OPTIONS,
     cart = [],
     loadCart,
-    selectedShippingMethod = 'STANDARD',
-    onSelectShippingMethod
+    reservationExpiresAt,
+    onContinue,
+    isCompleted,
+    isActive,
+    onEdit,
 }) {
-    const options = (deliveryOptions && deliveryOptions.length > 0) ? deliveryOptions : DEFAULT_DELIVERY_OPTIONS;
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        if (!reservationExpiresAt) {
+            setTimeLeft('');
+            return;
+        }
+
+        const updateCountdown = () => {
+            const now = Date.now();
+            const expires = new Date(reservationExpiresAt).getTime();
+            const diff = expires - now;
+
+            if (diff <= 0) {
+                setTimeLeft('Reservation expired');
+                return;
+            }
+
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            setTimeLeft(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        };
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000);
+        return () => clearInterval(interval);
+    }, [reservationExpiresAt]);
 
     if (!cart || cart.length === 0) {
         return (
-            <div className="order-summary empty-cart-message">
-                <p>Your cart is empty.</p>
-            </div>
+            <section className="checkout-step is-active" aria-labelledby="step-3-heading">
+                <div className="step-header">
+                    <div className="step-badge">3</div>
+                    <h2 id="step-3-heading" className="step-title">Order Review</h2>
+                </div>
+                <div className="step-content empty-cart-message">
+                    <p>Your shopping bag is empty.</p>
+                </div>
+            </section>
         );
     }
 
+    const totalQuantity = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+
     return (
-        <div className="order-summary">
-            {cart.map((cartItem) => {
-                const itemId = cartItem.id || cartItem.productId;
-                const deleteCartItem = async () => {
-                    try {
-                        await cartApi.removeItem(itemId);
-                        if (loadCart) {
-                            await loadCart();
-                        }
-                    } catch (err) {
-                        console.error('Failed to remove cart item:', err);
-                    }
-                };
+        <section className={`checkout-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`} aria-labelledby="step-3-heading">
+            <div className="step-header">
+                <div className="step-badge">3</div>
+                <h2 id="step-3-heading" className="step-title">Order Review &amp; Reservation</h2>
+                {isCompleted && !isActive && (
+                    <button
+                        type="button"
+                        className="step-edit-button"
+                        onClick={onEdit}
+                        aria-label="Edit Order Review"
+                    >
+                        Edit
+                    </button>
+                )}
+            </div>
 
-                return (
-                    <div key={itemId} className="cart-item-container">
-                        <DeliveryDate
-                            deliveryOptions={options}
-                            cartItem={cartItem}
-                            selectedShippingMethod={selectedShippingMethod}
-                        />
-
-                        <div className="cart-item-details-grid">
-                            <CartItemDetails
-                                cartItem={cartItem}
-                                deleteCartItem={deleteCartItem}
-                                loadCart={loadCart}
-                            />
-
-                            <DeliveryOptions
-                                deliveryOptions={options}
-                                cartItem={cartItem}
-                                selectedOptionId={cartItem.deliveryOptionId || selectedShippingMethod}
-                                onSelectOption={(optionId) => {
-                                    if (onSelectShippingMethod) {
-                                        onSelectShippingMethod(optionId);
-                                    }
-                                }}
-                            />
+            {isActive ? (
+                <div className="step-content review-step-content">
+                    {reservationExpiresAt ? (
+                        <div className="reservation-notice is-active-timer" role="status" aria-live="polite">
+                            <span className="notice-dot" aria-hidden="true"></span>
+                            <span className="notice-text">
+                                Stock locked. Complete checkout in <strong className="countdown-time">{timeLeft || '...'}</strong>
+                            </span>
                         </div>
+                    ) : (
+                        <div className="reservation-notice">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span className="notice-text">
+                                A 15-minute inventory reservation will be secured upon proceeding to payment.
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="review-items-list" aria-label="Items in your order">
+                        {cart.map((cartItem) => {
+                            const itemId = cartItem.id || cartItem.productId;
+                            const deleteCartItem = async () => {
+                                try {
+                                    await cartApi.removeItem(itemId);
+                                    if (loadCart) {
+                                        await loadCart();
+                                    }
+                                } catch (err) {
+                                    console.error('Failed to remove cart item:', err);
+                                }
+                            };
+
+                            return (
+                                <CartItemDetails
+                                    key={itemId}
+                                    cartItem={cartItem}
+                                    deleteCartItem={deleteCartItem}
+                                    loadCart={loadCart}
+                                />
+                            );
+                        })}
                     </div>
-                );
-            })}
-        </div>
+
+                    <div className="step-actions">
+                        <button
+                            type="button"
+                            className="button-primary submit-review-btn"
+                            onClick={onContinue}
+                        >
+                            Proceed to Payment
+                        </button>
+                    </div>
+                </div>
+            ) : isCompleted ? (
+                <div className="step-summary-content">
+                    <p className="summary-name">{totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} reviewed</p>
+                    <p className="summary-line">
+                        {cart.map((i) => i.name || i.product?.name).filter(Boolean).slice(0, 2).join(', ')}
+                        {cart.length > 2 ? ` and ${cart.length - 2} more` : ''}
+                    </p>
+                </div>
+            ) : null}
+        </section>
     );
-}
+}

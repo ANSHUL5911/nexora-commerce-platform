@@ -1,58 +1,101 @@
-import { formatMoney } from '../../utils/money';
 import dayjs from 'dayjs';
+import { formatMoney } from '../../utils/money';
 import { DEFAULT_DELIVERY_OPTIONS } from './deliveryOptionsData';
 
 export function DeliveryOptions({
-
     deliveryOptions = DEFAULT_DELIVERY_OPTIONS,
     selectedOptionId = 'STANDARD',
     onSelectOption,
-    cartItem
+    onContinue,
+    isCompleted,
+    isActive,
+    onEdit,
 }) {
     const options = (deliveryOptions && deliveryOptions.length > 0) ? deliveryOptions : DEFAULT_DELIVERY_OPTIONS;
+    const selectedOption = options.find((opt) => opt.id === selectedOptionId) || options[0];
+
+    // Non-authoritative display-only delivery date estimate
+    const getEstimatedDateText = (option) => {
+        if (option.estimatedDeliveryTimeMs) {
+            return dayjs(option.estimatedDeliveryTimeMs).format('dddd, MMMM D');
+        }
+        return dayjs().add(option.days || 5, 'day').format('dddd, MMMM D');
+    };
 
     return (
-        <div className="delivery-options">
-            <div className="delivery-options-title">
-                Choose a delivery option:
-            </div>
-            {options.map((deliveryOption) => {
-                const pricePaise = deliveryOption.pricePaise ?? deliveryOption.priceCents ?? 0;
-                let priceString = 'FREE Shipping';
-                if (pricePaise > 0) {
-                    priceString = `${formatMoney(pricePaise)} - Shipping`;
-                }
-
-                const deliveryDate = deliveryOption.estimatedDeliveryTimeMs
-                    ? dayjs(deliveryOption.estimatedDeliveryTimeMs).format('dddd, MMMM D')
-                    : dayjs().add(deliveryOption.days || 3, 'day').format('dddd, MMMM D');
-
-                const isChecked = selectedOptionId === deliveryOption.id || (cartItem && cartItem.deliveryOptionId === deliveryOption.id);
-
-                return (
-                    <div
-                        key={deliveryOption.id}
-                        className="delivery-option"
-                        onClick={() => onSelectOption && onSelectOption(deliveryOption.id, cartItem)}
+        <section className={`checkout-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`} aria-labelledby="step-2-heading">
+            <div className="step-header">
+                <div className="step-badge">2</div>
+                <h2 id="step-2-heading" className="step-title">Shipping Method</h2>
+                {isCompleted && !isActive && (
+                    <button
+                        type="button"
+                        className="step-edit-button"
+                        onClick={onEdit}
+                        aria-label="Edit Shipping Method"
                     >
-                        <input
-                            type="radio"
-                            checked={isChecked}
-                            onChange={() => onSelectOption && onSelectOption(deliveryOption.id, cartItem)}
-                            className="delivery-option-input"
-                            name={`delivery-option-${cartItem?.id || cartItem?.productId || 'global'}`}
-                        />
-                        <div>
-                            <div className="delivery-option-date">
-                                {deliveryDate}
-                            </div>
-                            <div className="delivery-option-price">
-                                {priceString}
-                            </div>
-                        </div>
+                        Edit
+                    </button>
+                )}
+            </div>
+
+            {isActive ? (
+                <div className="step-content delivery-options-step">
+                    <fieldset className="delivery-options-group" aria-label="Available delivery speeds">
+                        <legend className="visually-hidden">Select a shipping method</legend>
+                        {options.map((option) => {
+                            const isSelected = selectedOptionId === option.id;
+                            const pricePaise = option.pricePaise ?? option.priceCents ?? 0;
+                            const priceLabel = pricePaise === 0 ? 'FREE' : formatMoney(pricePaise);
+                            const estDate = getEstimatedDateText(option);
+
+                            return (
+                                <label
+                                    key={option.id}
+                                    htmlFor={`shipping-${option.id}`}
+                                    className={`delivery-option-card ${isSelected ? 'is-selected' : ''}`}
+                                >
+                                    <input
+                                        id={`shipping-${option.id}`}
+                                        type="radio"
+                                        name="shippingMethod"
+                                        value={option.id}
+                                        checked={isSelected}
+                                        onChange={() => onSelectOption && onSelectOption(option.id)}
+                                        className="delivery-option-radio"
+                                    />
+                                    <div className="delivery-option-info">
+                                        <div className="delivery-option-header-row">
+                                            <span className="delivery-option-name">{option.name}</span>
+                                            <span className="delivery-option-price-tag">{priceLabel}</span>
+                                        </div>
+                                        <span className="delivery-option-date-estimate">
+                                            Estimated delivery: <strong>{estDate}</strong>
+                                        </span>
+                                    </div>
+                                </label>
+                            );
+                        })}
+                    </fieldset>
+
+                    <div className="step-actions">
+                        <button
+                            type="button"
+                            className="button-primary submit-shipping-btn"
+                            onClick={onContinue}
+                        >
+                            Continue to Order Review
+                        </button>
                     </div>
-                );
-            })}
-        </div>
+                </div>
+            ) : isCompleted ? (
+                <div className="step-summary-content">
+                    <p className="summary-name">{selectedOption.name}</p>
+                    <p className="summary-line">
+                        Estimated delivery: {getEstimatedDateText(selectedOption)} • {selectedOption.pricePaise === 0 ? 'FREE' : formatMoney(selectedOption.pricePaise)}
+                    </p>
+                </div>
+            ) : null}
+        </section>
     );
-}
+}
