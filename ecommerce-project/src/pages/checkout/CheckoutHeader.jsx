@@ -2,11 +2,7 @@ import { Link } from 'react-router';
 import './CheckoutHeader.css';
 
 export function CheckoutHeader({ cart = [] }) {
-    let totalQuantity = 0;
-
-    cart.forEach((cartItem) => {
-        totalQuantity += cartItem.quantity;
-    });
+    const totalQuantity = (cart || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
 
     return (
         <div className="checkout-header">

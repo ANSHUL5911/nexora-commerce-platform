@@ -1,5 +1,6 @@
-export function formatMoney(amountCents) {
-    const sign = amountCents < 0 ? '-' : '';
-    const absoluteCents = Math.abs(amountCents);
-    return `${sign}$${(absoluteCents / 100).toFixed(2)}`;
+export function formatMoney(amountPaise = 0) {
+    const paise = Number(amountPaise) || 0;
+    const sign = paise < 0 ? '-' : '';
+    const absolutePaise = Math.abs(paise);
+    return `${sign}₹${(absolutePaise / 100).toFixed(2)}`;
 }

@@ -1,19 +1,29 @@
 import { useState } from 'react';
 import { formatMoney } from '../../utils/money';
-import axios from 'axios';
+import { cartApi } from '../../api/cart';
 
 export function Product({ product, loadCart }) {
     const [quantity, setQuantity] = useState(1);
     const [added, setAdded] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const addToCart = async () => {
-        await axios.post('/api/cart-items', {
-            productId: product.id,
-            quantity
-        });
-        await loadCart();
-        setAdded(true);
-        setTimeout(() => setAdded(false), 2000);
+        try {
+            setLoading(true);
+            await cartApi.addItem({
+                productId: product.id,
+                quantity
+            });
+            if (loadCart) {
+                await loadCart();
+            }
+            setAdded(true);
+            setTimeout(() => setAdded(false), 2000);
+        } catch (err) {
+            console.error('Failed to add item to cart:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const selectQuantity = (e) => {
@@ -21,12 +31,17 @@ export function Product({ product, loadCart }) {
         setQuantity(quantitySelected);
     };
 
+    const ratingStars = product.rating?.stars ?? 4.5;
+    const ratingCount = product.rating?.count ?? 0;
+    const pricePaise = product.pricePaise ?? product.price_paise ?? product.priceCents ?? 0;
+
     return (
-        <div className="product-container">
+        <div className="product-container" data-testid="product-container">
             <div className="product-image-container">
                 <img className="product-image"
                     data-testid="product-image"
-                    src={product.image} />
+                    src={product.image || product.imageUrl}
+                    alt={product.name} />
             </div>
 
             <div className="product-name limit-text-to-2-lines">
@@ -36,14 +51,15 @@ export function Product({ product, loadCart }) {
             <div className="product-rating-container">
                 <img className="product-rating-stars"
                     data-testid="product-rating-stars-image"
-                    src={`images/ratings/rating-${product.rating.stars * 10}.png`} />
+                    src={`images/ratings/rating-${Math.round(ratingStars * 10)}.png`}
+                    alt={`${ratingStars} stars`} />
                 <div className="product-rating-count link-primary">
-                    {product.rating.count}
+                    {ratingCount}
                 </div>
             </div>
 
             <div className="product-price">
-                {formatMoney(product.priceCents)}
+                {formatMoney(pricePaise)}
             </div>
 
             <div className="product-quantity-container">
@@ -64,13 +80,18 @@ export function Product({ product, loadCart }) {
             <div className="product-spacer"></div>
 
             <div className="added-to-cart" style={{ opacity: added ? 1 : 0 }}>
-                <img src="images/icons/checkmark.png" />
+                <img src="images/icons/checkmark.png" alt="Added" />
                 Added
             </div>
 
-            <button className="add-to-cart-button button-primary" data-testid="add-to-cart-button" onClick={addToCart}>
-                Add to Cart
+            <button
+                className="add-to-cart-button button-primary"
+                data-testid="add-to-cart-button"
+                onClick={addToCart}
+                disabled={loading}
+            >
+                {loading ? 'Adding...' : 'Add to Cart'}
             </button>
         </div>
     );
-}
+}

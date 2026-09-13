@@ -2,11 +2,7 @@ import { NavLink, useSearchParams } from 'react-router';
 import './Header.css';
 
 export function Header({ cart = [] }) {
-    let totalQuantity = 0;
-
-    cart.forEach((cartItem) => {
-        totalQuantity += cartItem.quantity;
-    });
+    const totalQuantity = (cart || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
 
     const [searchParams, setSearchParams] = useSearchParams();
     const search = searchParams.get('search') || '';
