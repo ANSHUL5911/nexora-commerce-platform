@@ -6,30 +6,57 @@ import { logger } from './src/utils/logger.js';
 let server;
 
 async function startServer() {
+  let dbConnected = false;
+
   try {
+    logger.info('Application starting', {
+      event: 'application.starting',
+      environment: config.NODE_ENV,
+      port: config.PORT,
+    });
+
     // Attempt database connection check (non-blocking warning if local dev DB is not yet running)
     if (config.NODE_ENV !== 'test') {
       try {
         await testDbConnection();
-        logger.info('PostgreSQL database connection established successfully.');
+        dbConnected = true;
+        logger.info('PostgreSQL database connection established successfully.', {
+          databaseConnected: true,
+        });
       } catch (dbErr) {
-        logger.warn(`PostgreSQL connection check skipped/failed: ${dbErr.message}. Server starting in foundation mode.`);
+        dbConnected = false;
+        logger.warn(`PostgreSQL connection check skipped/failed: ${dbErr.message}. Server starting in foundation mode.`, {
+          databaseConnected: false,
+        });
       }
     }
 
     server = app.listen(config.PORT, () => {
-      logger.info(`Nexora Backend Server running on port ${config.PORT} [${config.NODE_ENV}]`);
+      logger.info(`Nexora Backend Server running on port ${config.PORT} [${config.NODE_ENV}]`, {
+        event: 'application.started',
+        environment: config.NODE_ENV,
+        port: config.PORT,
+        databaseConnected: dbConnected,
+      });
     });
 
     const gracefulShutdown = async (signal) => {
-      logger.info(`Received ${signal}. Shutting down gracefully...`);
+      logger.info(`Received ${signal}. Shutting down gracefully...`, {
+        event: 'application.shutdown.started',
+        signal,
+      });
       if (server) {
         server.close(async () => {
-          logger.info('HTTP server closed.');
+          logger.info('HTTP server closed.', {
+            event: 'application.shutdown.completed',
+          });
           await closeDbConnection();
           process.exit(0);
         });
       } else {
+        logger.info('Application shutdown completed.', {
+          event: 'application.shutdown.completed',
+        });
         process.exit(0);
       }
     };
@@ -37,7 +64,10 @@ async function startServer() {
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   } catch (error) {
-    logger.error(`Fatal server startup error: ${error.message}`);
+    logger.error('Fatal server startup error', {
+      event: 'application.startup.failed',
+      errorMessage: error?.message || 'Unknown startup error',
+    });
     process.exit(1);
   }
 }

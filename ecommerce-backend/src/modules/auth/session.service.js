@@ -32,6 +32,18 @@ export function isValidSessionIdFormat(sid) {
 }
 
 /**
+ * Compute a safe, non-reversible cryptographic SHA-256 hash of a session ID
+ * for audit log correlation without persisting raw credentials.
+ *
+ * @param {string | undefined | null} sid
+ * @returns {string | null}
+ */
+export function hashSessionId(sid) {
+  if (!sid || typeof sid !== 'string') return null;
+  return crypto.createHash('sha256').update(sid).digest('hex');
+}
+
+/**
  * Create a new server-side session for an authenticated user.
  *
  * @param {string} userId - User UUID
@@ -173,4 +185,5 @@ export default {
   touchSessionIfDue,
   deleteSession,
   rotateSession,
+  hashSessionId,
 };

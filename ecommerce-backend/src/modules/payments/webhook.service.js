@@ -52,7 +52,9 @@ export const webhookService = {
     });
 
     if (!isSignatureValid) {
-      logger.warn('Razorpay webhook signature verification failed');
+      logger.warn('Razorpay webhook signature verification failed', {
+        event: 'webhook.signature.invalid',
+      });
       throw new WebhookSignatureVerificationError(
         'Invalid Razorpay webhook signature.'
       );
@@ -103,7 +105,7 @@ export const webhookService = {
           ) {
             logger.info(
               'Duplicate webhook event delivery for already PROCESSED event (idempotent)',
-              { eventId, eventType }
+              { event: 'webhook.duplicate', eventId, eventType }
             );
             return {
               status: 'ignored_duplicate',
@@ -117,7 +119,7 @@ export const webhookService = {
           ) {
             logger.info(
               'Duplicate webhook event delivery for REQUIRES_REFUND event',
-              { eventId, eventType }
+              { event: 'webhook.duplicate', eventId, eventType }
             );
             return {
               status: 'requires_refund',
@@ -140,6 +142,7 @@ export const webhookService = {
           logger.info(
             'Recovering and retrying incomplete or failed PaymentEvent',
             {
+              event: 'webhook.processing.started',
               eventId,
               previousStatus: existingEvent.processing_status,
             }
@@ -152,6 +155,12 @@ export const webhookService = {
         throw err;
       }
     }
+
+    logger.info('Webhook processing started', {
+      event: 'webhook.processing.started',
+      eventId,
+      eventType,
+    });
 
     // ----------------------------------------------------
     // STEP 4: Event Dispatch & Processing
@@ -401,6 +410,8 @@ export const webhookService = {
           logger.warn(
             'Late captured payment on expired order. Flagging REQUIRES_REFUND without mutating inventory.',
             {
+              event: 'webhook.requires_refund',
+              eventId,
               orderId: order.id,
               paymentAttemptId: lockedAttempt.id,
               razorpayPaymentId,
@@ -488,6 +499,7 @@ export const webhookService = {
       };
     } catch (settlementErr) {
       logger.error('Error during transactional webhook settlement', {
+        event: 'webhook.processing.failed',
         eventId,
         error: settlementErr.message,
       });

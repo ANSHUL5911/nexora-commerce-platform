@@ -12,6 +12,7 @@ import {
 import { toOrderDTO } from '../orders/order.dto.js';
 import { toPaymentInitiationDTO } from '../payments/payment.dto.js';
 import { config } from '../../config/env.js';
+import { logger } from '../../utils/logger.js';
 
 export const idempotencyRepository = {
   /**
@@ -40,6 +41,11 @@ export const idempotencyRepository = {
         status: IDEMPOTENCY_STATUS.IN_PROGRESS,
         request_hash: requestHash,
         expires_at: expiresAt,
+      });
+
+      logger.info('Idempotency key claimed', {
+        event: 'idempotency.claimed',
+        path: requestPath,
       });
 
       return {
@@ -85,6 +91,10 @@ export const idempotencyRepository = {
 
       // Check request payload hash integrity
       if (existingRecord.request_hash !== requestHash) {
+        logger.warn('Idempotency payload mismatch', {
+          event: 'idempotency.payload_mismatch',
+          path: requestPath,
+        });
         throw new IdempotencyPayloadMismatchError(
           'Idempotency key has already been used with a different request payload.'
         );
@@ -92,6 +102,12 @@ export const idempotencyRepository = {
 
       // Handle COMPLETED state -> immediate cached replay
       if (existingRecord.status === IDEMPOTENCY_STATUS.COMPLETED) {
+        logger.info('Idempotency cached replay returned', {
+          event: 'idempotency.replay',
+          path: requestPath,
+          orderId: existingRecord.order_id,
+          paymentAttemptId: existingRecord.payment_attempt_id,
+        });
         result = {
           record: existingRecord,
           claimed: false,
@@ -137,6 +153,12 @@ export const idempotencyRepository = {
               },
               { transaction: tx }
             );
+
+            logger.info('Idempotency recovery performed from existing payment attempt', {
+              event: 'idempotency.recovery',
+              path: requestPath,
+              paymentAttemptId: attempt.id,
+            });
 
             result = {
               record: existingRecord,
@@ -196,11 +218,19 @@ export const idempotencyRepository = {
         }
 
         // Genuinely active operation or uncompleted attempt
+        logger.warn('Idempotency operation currently in progress', {
+          event: 'idempotency.in_progress',
+          path: requestPath,
+        });
         throw new IdempotencyInProgressError(
           'An operation with this idempotency key is currently in progress. Please retry shortly.'
         );
       }
 
+      logger.warn('Idempotency operation currently in progress', {
+        event: 'idempotency.in_progress',
+        path: requestPath,
+      });
       throw new IdempotencyInProgressError(
         'An operation with this idempotency key is currently in progress. Please retry shortly.'
       );
@@ -250,11 +280,21 @@ export const idempotencyRepository = {
         where: { id },
         transaction,
       });
+      logger.info('Idempotency record completed', {
+        event: 'idempotency.completed',
+        orderId,
+        paymentAttemptId,
+      });
       return IdempotencyRecord.findByPk(id, { transaction });
     }
 
     await IdempotencyRecord.update(updateData, {
       where: { id },
+    });
+    logger.info('Idempotency record completed', {
+      event: 'idempotency.completed',
+      orderId,
+      paymentAttemptId,
     });
     return IdempotencyRecord.findByPk(id);
   },
@@ -307,6 +347,10 @@ export const idempotencyRepository = {
         where: { id },
       });
     }
+
+    logger.info('Idempotency record marked failed retryable', {
+      event: 'idempotency.failed_retryable',
+    });
   },
 
   /**

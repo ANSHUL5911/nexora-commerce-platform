@@ -26,6 +26,7 @@ import {
   isGuestTokenExpired,
 } from './guestToken.js';
 import { ValidationError, AppError } from '../../utils/errors.js';
+import { logger } from '../../utils/logger.js';
 
 export const orderService = {
   /**
@@ -210,6 +211,13 @@ export const orderService = {
           { transaction: tx }
         );
       }
+
+      logger.info('Guest order created successfully', {
+        event: 'order.created',
+        orderId: order.id,
+        actorType: 'guest',
+        statusCode: 201,
+      });
 
       // Return DTO with rawToken attached in-memory for the single live response
       return {
@@ -425,6 +433,14 @@ export const orderService = {
         );
       }
 
+      logger.info('Order created successfully', {
+        event: 'order.created',
+        orderId: order.id,
+        userId,
+        actorType: 'customer',
+        statusCode: 201,
+      });
+
       return orderDTO;
     };
 
@@ -475,11 +491,21 @@ export const orderService = {
     // Verify token hash in constant time
     const isValidToken = verifyGuestToken(rawGuestToken, order.guest_token_hash);
     if (!isValidToken) {
+      logger.warn('Guest token validation failed', {
+        event: 'guest.token.invalid',
+        orderId,
+        actorType: 'guest',
+      });
       throw new OrderNotFoundError('Order was not found.');
     }
 
     // Verify 30-day token lifetime relative to order.created_at
     if (isGuestTokenExpired(order.created_at)) {
+      logger.warn('Guest token expired', {
+        event: 'guest.token.expired',
+        orderId,
+        actorType: 'guest',
+      });
       throw new OrderNotFoundError('Order was not found.');
     }
 
@@ -514,7 +540,19 @@ export const orderService = {
     if (guestToken && typeof guestToken === 'string' && guestToken.trim() !== '') {
       if (order.user_id === null && order.guest_token_hash) {
         const isValidToken = verifyGuestToken(guestToken, order.guest_token_hash);
-        if (isValidToken && !isGuestTokenExpired(order.created_at)) {
+        if (!isValidToken) {
+          logger.warn('Guest token validation failed', {
+            event: 'guest.token.invalid',
+            orderId,
+            actorType: 'guest',
+          });
+        } else if (isGuestTokenExpired(order.created_at)) {
+          logger.warn('Guest token expired', {
+            event: 'guest.token.expired',
+            orderId,
+            actorType: 'guest',
+          });
+        } else {
           return toOrderDTO(order);
         }
       }
@@ -626,6 +664,14 @@ export const orderService = {
       const updatedOrder = await orderRepository.findOrderById(orderId, {
         transaction: tx,
         includeItems: true,
+      });
+
+      logger.info('Order status transitioned', {
+        event: 'order.status_changed',
+        orderId,
+        previousStatus: currentStatus,
+        newStatus: targetStatus,
+        actorType: String(role || '').toLowerCase() === 'admin' ? 'admin' : (userId ? 'customer' : 'system'),
       });
 
       return toOrderDTO(updatedOrder);

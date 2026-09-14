@@ -58,6 +58,12 @@ export const restockService = {
       );
     }
 
+    logger.info('Admin physical restock requested', {
+      event: 'admin.restock.requested',
+      orderId,
+      adminId,
+    });
+
     let finalRestockedItems = [];
     let reloadedOrder;
 
@@ -230,6 +236,7 @@ export const restockService = {
     });
 
     logger.info('Admin physical restock completed successfully', {
+      event: 'admin.restock.completed',
       orderId,
       adminId,
       itemsCount: finalRestockedItems.length,

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { ForbiddenError } from '../../utils/errors.js';
+import { logger } from '../../utils/logger.js';
 
 export const CSRF_COOKIE_NAME = 'nexora_csrf';
 export const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -62,12 +63,30 @@ export function verifyCsrf(req, res, next) {
   const headerToken = req.headers?.[CSRF_HEADER_NAME] || req.headers?.['x-csrf-token'];
 
   if (!cookieToken || !headerToken) {
+    const rawPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.originalUrl || req.url || req.path);
+    logger.warn('CSRF validation rejected: missing token', {
+      event: 'csrf.rejected',
+      requestId: req.id || req.requestId || 'unknown',
+      path: (rawPath || '/').split('?')[0],
+      method: req.method,
+      reason: 'CSRF_TOKEN_MISSING',
+    });
+
     return next(
       new ForbiddenError('CSRF token missing from request cookie or header', 'CSRF_TOKEN_MISSING')
     );
   }
 
   if (!timingSafeCompare(cookieToken, headerToken)) {
+    const rawPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.originalUrl || req.url || req.path);
+    logger.warn('CSRF validation rejected: invalid token', {
+      event: 'csrf.rejected',
+      requestId: req.id || req.requestId || 'unknown',
+      path: (rawPath || '/').split('?')[0],
+      method: req.method,
+      reason: 'CSRF_INVALID',
+    });
+
     return next(new ForbiddenError('Invalid or mismatched CSRF token', 'CSRF_INVALID'));
   }
 

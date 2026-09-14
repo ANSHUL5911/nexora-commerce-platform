@@ -12,6 +12,7 @@ import {
   InventoryInvariantError,
 } from './inventory.errors.js';
 import { NotFoundError, ValidationError } from '../../utils/errors.js';
+import { logger } from '../../utils/logger.js';
 
 export const inventoryService = {
   /**
@@ -60,6 +61,13 @@ export const inventoryService = {
       const available = stock - reserved;
 
       if (quantity > available) {
+        logger.warn('Insufficient stock for reservation', {
+          event: 'inventory.insufficient_stock',
+          orderId,
+          productId,
+          quantity,
+          availableStock: available,
+        });
         throw new InsufficientStockError('Requested quantity exceeds available stock.');
       }
 
@@ -71,6 +79,14 @@ export const inventoryService = {
         { orderId, productId, quantity, status: 'ACTIVE' },
         { transaction: tx }
       );
+
+      logger.info('Inventory reservation created', {
+        event: 'inventory.reservation.created',
+        orderId,
+        productId,
+        reservationId: reservation.id,
+        quantity,
+      });
 
       return toReservationDTO(reservation);
     };
@@ -134,6 +150,13 @@ export const inventoryService = {
       // 5. Verify invariant and guarded decrement
       const reserved = Number(product.reserved_quantity ?? 0);
       if (reserved < reservation.quantity) {
+        logger.error('Inventory invariant violation during release', {
+          event: 'inventory.invariant_violation',
+          reservationId: reservation.id,
+          productId: reservation.product_id,
+          reservedQuantity: reserved,
+          requestedQuantity: reservation.quantity,
+        });
         throw new InventoryInvariantError('Reserved quantity is less than reservation quantity.');
       }
 
@@ -145,6 +168,13 @@ export const inventoryService = {
 
       // 6. Mark reservation as RELEASED with PostgreSQL CURRENT_TIMESTAMP
       await inventoryRepository.markReservationReleased(reservation.id, { transaction: tx });
+
+      logger.info('Inventory reservation released', {
+        event: 'inventory.reservation.released',
+        reservationId: reservation.id,
+        productId: reservation.product_id,
+        quantity: reservation.quantity,
+      });
 
       await reservation.reload({ transaction: tx });
       return toReservationDTO(reservation);
@@ -230,6 +260,14 @@ export const inventoryService = {
       const reserved = Number(product.reserved_quantity ?? 0);
 
       if (stock < reservation.quantity || reserved < reservation.quantity) {
+        logger.error('Inventory invariant violation during conversion', {
+          event: 'inventory.invariant_violation',
+          reservationId: reservation.id,
+          productId: reservation.product_id,
+          stock,
+          reserved,
+          requestedQuantity: reservation.quantity,
+        });
         throw new InventoryInvariantError(
           'Insufficient stock or reserved quantity to convert reservation.'
         );
@@ -244,6 +282,13 @@ export const inventoryService = {
 
       // 7. Mark reservation as CONVERTED
       await inventoryRepository.markReservationConverted(reservation.id, { transaction: tx });
+
+      logger.info('Inventory reservation converted', {
+        event: 'inventory.reservation.converted',
+        reservationId: reservation.id,
+        productId: reservation.product_id,
+        quantity: reservation.quantity,
+      });
 
       await reservation.reload({ transaction: tx });
       return toReservationDTO(reservation);
@@ -318,6 +363,13 @@ export const inventoryService = {
         // Mark as EXPIRED with PostgreSQL CURRENT_TIMESTAMP
         await inventoryRepository.markReservationExpired(reservation.id, { transaction: tx });
         releasedCount += 1;
+
+        logger.info('Expired inventory reservation released', {
+          event: 'inventory.reservation.expired',
+          reservationId: reservation.id,
+          productId: reservation.product_id,
+          quantity: reservation.quantity,
+        });
       });
     }
 

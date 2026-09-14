@@ -155,6 +155,7 @@ export const refundService = {
     let rzpRefund;
     try {
       logger.info('Calling Razorpay refund API for settled payment attempt', {
+        event: 'admin.refund.requested',
         orderId,
         paymentAttemptId: settledAttempt.id,
         paymentId: settledAttempt.razorpay_payment_id,
@@ -174,6 +175,7 @@ export const refundService = {
       });
     } catch (gatewayErr) {
       logger.error('External Razorpay refund failed. Rolling back local refund state.', {
+        event: 'admin.refund.failed',
         orderId,
         paymentAttemptId: settledAttempt.id,
         error: gatewayErr.message,
@@ -277,6 +279,7 @@ export const refundService = {
     await finalAttempt.reload();
 
     logger.info('Admin refund completed successfully', {
+      event: 'admin.refund.completed',
       orderId: finalOrder.id,
       paymentAttemptId: finalAttempt.id,
       refundId: rzpRefund.id,

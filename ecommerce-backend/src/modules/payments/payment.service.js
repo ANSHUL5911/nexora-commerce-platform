@@ -171,6 +171,13 @@ export const paymentService = {
 
       createdAttemptId = paymentAttempt.id;
 
+      logger.info('PaymentAttempt created', {
+        event: 'payment.attempt.created',
+        orderId,
+        paymentAttemptId: createdAttemptId,
+        amountPaise: orderTotalPaise,
+      });
+
       // Link intermediate entity references to IdempotencyRecord inside Phase A transaction
       if (idempotencyRecord) {
         await idempotencyRepository.linkEntities(
@@ -216,8 +223,16 @@ export const paymentService = {
           paymentAttemptId: createdAttemptId,
         },
       });
+
+      logger.info('Razorpay order created for payment attempt', {
+        event: 'payment.gateway.order.created',
+        orderId,
+        paymentAttemptId: createdAttemptId,
+        razorpayOrderId: rzpOrder.id,
+      });
     } catch (gatewayErr) {
       logger.error('Razorpay order creation failed after DB commit. Marking attempt FAILED.', {
+        event: 'payment.gateway.failed',
         paymentAttemptId: createdAttemptId,
         orderId,
         error: gatewayErr.message,
@@ -362,6 +377,7 @@ export const paymentService = {
       // 3. Idempotency Check: If Order is already PAID and PaymentAttempt is already SUCCESS, return gracefully
       if (order.order_status === 'PAID' && paymentAttempt.status === PAYMENT_STATUS.SUCCESS) {
         logger.info('Order and PaymentAttempt already settled (idempotent)', {
+          event: 'payment.settlement.already_processed',
           orderId: order.id,
           paymentAttemptId: paymentAttempt.id,
         });
@@ -471,8 +487,10 @@ export const paymentService = {
       }
 
       logger.info('Payment settlement completed successfully', {
+        event: 'payment.settlement.completed',
         orderId: order.id,
         paymentAttemptId: paymentAttempt.id,
+        razorpayPaymentId,
         orderStatus: order.order_status,
         paymentStatus: paymentAttempt.status,
       });
@@ -547,6 +565,14 @@ export const paymentService = {
     }
 
     // 3. Timing-safe HMAC-SHA256 signature verification
+    logger.info('Starting payment verification', {
+      event: 'payment.verification.started',
+      orderId,
+      paymentAttemptId: paymentAttempt.id,
+      razorpayOrderId,
+      razorpayPaymentId,
+    });
+
     const isSignatureValid = razorpayGateway.verifySignature({
       razorpayOrderId,
       razorpayPaymentId,
@@ -555,6 +581,7 @@ export const paymentService = {
 
     if (!isSignatureValid) {
       logger.warn('Payment signature verification failed', {
+        event: 'payment.signature.invalid',
         orderId,
         paymentAttemptId: paymentAttempt.id,
         razorpayOrderId,
@@ -610,6 +637,9 @@ export const paymentService = {
       paymentDetails.status === 'captured' || paymentDetails.captured === true;
     if (!isCaptured) {
       logger.warn('Razorpay payment is not in captured status', {
+        event: 'payment.verification.failed',
+        orderId,
+        paymentAttemptId: paymentAttempt.id,
         status: paymentDetails.status,
       });
       await paymentRepository.markAttemptFailed(
@@ -620,6 +650,14 @@ export const paymentService = {
         `Payment is not captured. Current gateway status: ${paymentDetails.status}`
       );
     }
+
+    logger.info('Gateway payment capture confirmed', {
+      event: 'payment.capture.confirmed',
+      orderId,
+      paymentAttemptId: paymentAttempt.id,
+      razorpayOrderId,
+      razorpayPaymentId,
+    });
 
     // 5. Execute shared atomic domain settlement
     const { order: settledOrder, paymentAttempt: settledAttempt } =

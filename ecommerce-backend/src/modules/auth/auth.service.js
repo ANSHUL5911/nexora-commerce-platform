@@ -1,9 +1,10 @@
 import crypto from 'crypto';
 import { sequelize } from '../../config/database.js';
 import { User } from '../../models/User.js';
+import { Session } from '../../models/Session.js';
 import { AuditLog } from '../../models/AuditLog.js';
 import { hashPassword, verifyPassword, verifyDummyPassword } from './password.js';
-import { createSession, rotateSession, deleteSession } from './session.service.js';
+import { createSession, rotateSession, deleteSession, hashSessionId, isValidSessionIdFormat } from './session.service.js';
 import { generateCsrfToken } from './csrf.js';
 import { toSafeUserDTO } from './auth.dto.js';
 import { ConflictError, AuthenticationError } from '../../utils/errors.js';
@@ -68,8 +69,10 @@ export async function register({ email, password, full_name, ipAddress = '127.0.
   const csrfToken = generateCsrfToken();
 
   logger.info({
+    event: 'auth.register.success',
     message: 'User registered successfully',
     userId: result.user.id,
+    actorType: result.user.role,
     role: result.user.role,
     ip: ipAddress,
   });
@@ -101,6 +104,7 @@ export async function login({ email, password, incomingSid, ipAddress = '127.0.0
     await verifyDummyPassword(password);
 
     logger.warn({
+      event: 'auth.login.failure',
       message: 'Authentication failed: invalid credentials or inactive user',
       ip: ipAddress,
       reason: 'INVALID_CREDENTIALS',
@@ -113,6 +117,7 @@ export async function login({ email, password, incomingSid, ipAddress = '127.0.0
 
   if (!isMatch) {
     logger.warn({
+      event: 'auth.login.failure',
       message: 'Authentication failed: invalid password',
       userId: user.id,
       ip: ipAddress,
@@ -124,6 +129,12 @@ export async function login({ email, password, incomingSid, ipAddress = '127.0.0
 
   // Session fixation defense: invalidate existing session and create fresh session
   const session = await rotateSession(incomingSid, user.id);
+  logger.info({
+    event: 'auth.session.rotated',
+    message: 'Session rotated for authenticated user',
+    userId: user.id,
+  });
+
   const csrfToken = generateCsrfToken();
 
   // Minimal audit record
@@ -133,7 +144,7 @@ export async function login({ email, password, incomingSid, ipAddress = '127.0.0
       actor_id: user.id,
       action: 'AUTH_LOGIN_SUCCESS',
       target_resource: 'sessions',
-      resource_id: session.sid,
+      resource_id: hashSessionId(session.sid),
       ip_address: ipAddress.slice(0, 45),
       details_json: { role: user.role },
       created_at: new Date(),
@@ -146,8 +157,10 @@ export async function login({ email, password, incomingSid, ipAddress = '127.0.0
   }
 
   logger.info({
+    event: 'auth.login.success',
     message: 'User logged in successfully',
     userId: user.id,
+    actorType: user.role,
     role: user.role,
     ip: ipAddress,
   });
@@ -166,18 +179,30 @@ export async function login({ email, password, incomingSid, ipAddress = '127.0.0
  * @returns {Promise<void>}
  */
 export async function logout({ sid, userId, ipAddress = '127.0.0.1' }) {
+  let effectiveUserId = userId;
+  if (!effectiveUserId && sid && isValidSessionIdFormat(sid)) {
+    try {
+      const existingSession = await Session.findByPk(sid);
+      if (existingSession) {
+        effectiveUserId = existingSession.user_id;
+      }
+    } catch {
+      // Ignore lookup error
+    }
+  }
+
   if (sid) {
     await deleteSession(sid);
   }
 
-  if (userId) {
+  if (effectiveUserId) {
     try {
       await AuditLog.create({
         id: crypto.randomUUID(),
-        actor_id: userId,
+        actor_id: effectiveUserId,
         action: 'AUTH_LOGOUT',
         target_resource: 'sessions',
-        resource_id: sid || null,
+        resource_id: hashSessionId(sid),
         ip_address: ipAddress.slice(0, 45),
         details_json: null,
         created_at: new Date(),
@@ -191,8 +216,10 @@ export async function logout({ sid, userId, ipAddress = '127.0.0.1' }) {
   }
 
   logger.info({
+    event: 'auth.logout',
     message: 'User logged out successfully',
-    userId: userId || 'anonymous',
+    userId: effectiveUserId || 'anonymous',
+    actorType: effectiveUserId ? 'customer' : 'anonymous',
     ip: ipAddress,
   });
 }

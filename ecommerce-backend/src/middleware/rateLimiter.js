@@ -1,17 +1,31 @@
 import rateLimit from 'express-rate-limit';
 import { config } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Creates standardized rate limit handler returning Nexora standard error JSON.
+ * Emits structured rate_limit.rejected operational event without sensitive input.
  * @param {string} customMessage
  */
-function createRateLimitHandler(customMessage = 'Too many requests. Please try again later.') {
+export function createRateLimitHandler(customMessage = 'Too many requests. Please try again later.') {
   return (req, res) => {
+    const reqId = req.id || req.requestId || 'unknown';
+    const rawPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.originalUrl || req.url || req.path);
+    const normalizedPath = (rawPath || '/').split('?')[0].replace(/\/+$/, '') || '/';
+
+    logger.warn('Rate limit exceeded', {
+      event: 'rate_limit.rejected',
+      requestId: reqId,
+      path: normalizedPath,
+      method: req.method,
+      statusCode: 429,
+    });
+
     res.status(429).json({
       error: {
         code: 'RATE_LIMIT_EXCEEDED',
         message: customMessage,
-        requestId: req.id || req.requestId || 'unknown',
+        requestId: reqId,
       },
     });
   };

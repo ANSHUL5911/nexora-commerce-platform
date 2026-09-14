@@ -43,19 +43,25 @@ export function errorHandler(err, req, res, next) {
   }
 
   // Log error with structured logger
+  const rawPath = req.baseUrl ? `${req.baseUrl}${req.path}` : (req.originalUrl || req.url || req.path);
+  const normalizedPath = (rawPath || '/').split('?')[0];
+
   const logPayload = {
+    event: statusCode >= 500 ? 'http.server_error' : 'http.client_error',
     requestId,
     statusCode,
     errorCode: code,
+    errorType: err.name || 'Error',
     errorMessage: err.message,
     method: req.method,
+    path: normalizedPath,
     url: req.originalUrl || req.url,
   };
 
   if (statusCode >= 500) {
     logger.error(`Server Error: ${err.message}`, {
       ...logPayload,
-      stack: config.NODE_ENV === 'development' ? err.stack : undefined,
+      stack: err.stack,
     });
   } else {
     logger.warn(`Client Error: ${err.message}`, logPayload);
