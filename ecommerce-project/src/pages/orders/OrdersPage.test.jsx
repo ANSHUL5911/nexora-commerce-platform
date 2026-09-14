@@ -1,8 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import userEvent from '@testing-library/user-event';
 import { OrdersPage } from './OrdersPage.jsx';
 import { ordersApi } from '../../api/orders.js';
+import { cartApi } from '../../api/cart.js';
+
+vi.mock('../../api/cart.js', () => ({
+  cartApi: {
+    addItem: vi.fn().mockResolvedValue({ success: true }),
+  },
+  default: {
+    addItem: vi.fn().mockResolvedValue({ success: true }),
+  },
+}));
 
 vi.mock('../../api/orders.js', () => ({
   ordersApi: {
@@ -79,5 +90,44 @@ describe('OrdersPage component', () => {
     expect(screen.getByText('₹2180.00')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /buy again/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /track package/i })).toBeInTheDocument();
+  });
+
+  it('adds item to cart using existing cartApi and invokes loadCart on Buy Again click', async () => {
+    const user = userEvent.setup();
+    ordersApi.listOrders.mockResolvedValue({
+      orders: [
+        {
+          id: 'ord-buy-again',
+          status: 'PAID',
+          total_paise: 100000,
+          created_at: '2026-09-10T12:00:00.000Z',
+          items: [
+            {
+              id: 'oi-10',
+              productId: 'prod-socks-10',
+              productName: 'Architectural Cotton Socks',
+              quantity: 1,
+              unitPricePaise: 100000,
+              image: 'images/products/athletic-cotton-socks-6-pairs.jpg',
+            },
+          ],
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <OrdersPage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    const buyAgainBtn = await screen.findByRole('button', { name: /buy again/i });
+    await user.click(buyAgainBtn);
+
+    expect(cartApi.addItem).toHaveBeenCalledWith({
+      productId: 'prod-socks-10',
+      quantity: 1,
+    });
+    expect(loadCart).toHaveBeenCalled();
   });
 });
