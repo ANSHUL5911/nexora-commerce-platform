@@ -1,0 +1,1177 @@
+{
+  "timestamp": "2026-09-14T19:18:06.124Z",
+  "environment": {
+    "nodeVersion": "v24.13.0",
+    "platform": "win32",
+    "arch": "x64",
+    "database": "nexora_test",
+    "pool": {
+      "min": 2,
+      "max": 10,
+      "acquire": 30000,
+      "idle": 10000
+    }
+  },
+  "memory": {
+    "initialRssMb": 108.56,
+    "initialHeapMb": 31.44,
+    "finalRssMb": 134.58,
+    "finalHeapMb": 40.53
+  },
+  "explainResults": [
+    {
+      "queryName": "Product Catalog Default List (Sort created_at DESC, id DESC LIMIT 10)",
+      "sql": "SELECT id, name, description, price_paise, stock_quantity, reserved_quantity, category, image_url, is_deleted, created_at, updated_at FROM products WHERE is_deleted = false ORDER BY created_at DESC, id DESC LIMIT 10;",
+      "executionTimeMs": 0.049,
+      "planningTimeMs": 0.191,
+      "scanTypes": [
+        "Seq Scan"
+      ],
+      "bufferHits": 54,
+      "bufferReads": 0,
+      "rawPlan": [
+        "Limit  (cost=22.96..22.98 rows=10 width=169) (actual time=0.035..0.036 rows=10 loops=1)",
+        "  Buffers: shared hit=2",
+        "  ->  Sort  (cost=22.96..23.98 rows=410 width=169) (actual time=0.033..0.033 rows=10 loops=1)",
+        "        Sort Key: created_at DESC, id DESC",
+        "        Sort Method: top-N heapsort  Memory: 30kB",
+        "        Buffers: shared hit=2",
+        "        ->  Seq Scan on products  (cost=0.00..14.10 rows=410 width=169) (actual time=0.010..0.017 rows=50 loops=1)",
+        "              Filter: (NOT is_deleted)",
+        "              Buffers: shared hit=2",
+        "Planning:",
+        "  Buffers: shared hit=48",
+        "Planning Time: 0.191 ms",
+        "Execution Time: 0.049 ms"
+      ]
+    },
+    {
+      "queryName": "Product Lookup by ID with Soft-Delete Filter",
+      "sql": "SELECT id, name, price_paise, stock_quantity, reserved_quantity, is_deleted FROM products WHERE id = '00000000-0000-4000-8000-000100000001' AND is_deleted = false;",
+      "executionTimeMs": 0.018,
+      "planningTimeMs": 0.062,
+      "scanTypes": [
+        "Index Scan"
+      ],
+      "bufferHits": 2,
+      "bufferReads": 0,
+      "rawPlan": [
+        "Index Scan using products_pkey on products  (cost=0.15..8.17 rows=1 width=60) (actual time=0.005..0.006 rows=1 loops=1)",
+        "  Index Cond: (id = '00000000-0000-4000-8000-000100000001'::uuid)",
+        "  Filter: (NOT is_deleted)",
+        "  Buffers: shared hit=2",
+        "Planning Time: 0.062 ms",
+        "Execution Time: 0.018 ms"
+      ]
+    },
+    {
+      "queryName": "Deterministic Row Lock on Products (FOR UPDATE)",
+      "sql": "SELECT id, stock_quantity, reserved_quantity FROM products WHERE id = '00000000-0000-4000-8000-000100000001' FOR UPDATE;",
+      "executionTimeMs": 0.038,
+      "planningTimeMs": 0.079,
+      "scanTypes": [
+        "Index Scan"
+      ],
+      "bufferHits": 8,
+      "bufferReads": 0,
+      "rawPlan": [
+        "LockRows  (cost=0.15..8.18 rows=1 width=30) (actual time=0.020..0.021 rows=1 loops=1)",
+        "  Buffers: shared hit=3",
+        "  ->  Index Scan using products_pkey on products  (cost=0.15..8.17 rows=1 width=30) (actual time=0.011..0.012 rows=1 loops=1)",
+        "        Index Cond: (id = '00000000-0000-4000-8000-000100000001'::uuid)",
+        "        Buffers: shared hit=2",
+        "Planning:",
+        "  Buffers: shared hit=3",
+        "Planning Time: 0.079 ms",
+        "Execution Time: 0.038 ms"
+      ]
+    },
+    {
+      "queryName": "Webhook Event Idempotency Lookup",
+      "sql": "SELECT id, event_id, processing_status FROM payment_events WHERE event_id = 'evt_sample_explain_lookup';",
+      "executionTimeMs": 0.014,
+      "planningTimeMs": 2.802,
+      "scanTypes": [
+        "Index Scan"
+      ],
+      "bufferHits": 28,
+      "bufferReads": 3,
+      "rawPlan": [
+        "Index Scan using payment_events_event_id_key on payment_events  (cost=0.15..8.17 rows=1 width=48) (actual time=0.003..0.003 rows=0 loops=1)",
+        "  Index Cond: ((event_id)::text = 'evt_sample_explain_lookup'::text)",
+        "  Buffers: shared hit=2",
+        "Planning:",
+        "  Buffers: shared hit=26 read=3",
+        "Planning Time: 2.802 ms",
+        "Execution Time: 0.014 ms"
+      ]
+    },
+    {
+      "queryName": "Session SID Authentication Lookup",
+      "sql": "SELECT sid, user_id, expires_at FROM sessions WHERE sid = 'sample_sid_for_explain_plan' AND expires_at > CURRENT_TIMESTAMP;",
+      "executionTimeMs": 0.012,
+      "planningTimeMs": 1.921,
+      "scanTypes": [
+        "Index Scan"
+      ],
+      "bufferHits": 31,
+      "bufferReads": 3,
+      "rawPlan": [
+        "Index Scan using sessions_pkey on sessions  (cost=0.15..8.17 rows=1 width=89) (actual time=0.002..0.003 rows=0 loops=1)",
+        "  Index Cond: ((sid)::text = 'sample_sid_for_explain_plan'::text)",
+        "  Filter: (expires_at > CURRENT_TIMESTAMP)",
+        "  Buffers: shared hit=2",
+        "Planning:",
+        "  Buffers: shared hit=29 read=3",
+        "Planning Time: 1.921 ms",
+        "Execution Time: 0.012 ms"
+      ]
+    }
+  ],
+  "repeatabilityRuns": [
+    {
+      "runIndex": 1,
+      "bench01": {
+        "scenario": "BENCH-01: Product Listing",
+        "target": "p95 < 200 ms",
+        "passed": true,
+        "stats": {
+          "count": 30,
+          "min": 3.79,
+          "max": 16.78,
+          "mean": 6.69,
+          "p50": 5.25,
+          "p95": 14.88,
+          "p99": 16.43,
+          "stdDev": 3.5
+        },
+        "throughputReqSec": 149.11,
+        "avgQueryCount": 2,
+        "avgQueryDurationMs": 2.02,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench02": {
+        "scenario": "BENCH-02: Product Detail",
+        "target": "diagnostic / characterization",
+        "stats": {
+          "count": 30,
+          "min": 3.43,
+          "max": 6.32,
+          "mean": 4.24,
+          "p50": 3.81,
+          "p95": 5.94,
+          "p99": 6.23,
+          "stdDev": 0.86
+        },
+        "throughputReqSec": 235.27,
+        "avgQueryCount": 1,
+        "avgQueryDurationMs": 0.51,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench03": {
+        "scenario": "BENCH-03: Cart Retrieval",
+        "target": "diagnostic / characterization",
+        "stats": {
+          "count": 25,
+          "min": 4.93,
+          "max": 9.21,
+          "mean": 6.73,
+          "p50": 6.39,
+          "p95": 8.54,
+          "p99": 9.07,
+          "stdDev": 1.15
+        },
+        "throughputReqSec": 148.38,
+        "avgQueryCount": 2,
+        "avgQueryDurationMs": 1.77,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench04": {
+        "scenario": "BENCH-04: Checkout / Order Creation (POST /api/checkout/initiate)",
+        "target": "p95 < 300 ms",
+        "passed": true,
+        "stats": {
+          "count": 20,
+          "min": 19.66,
+          "max": 49.24,
+          "mean": 25.46,
+          "p50": 23.05,
+          "p95": 32.89,
+          "p99": 45.97,
+          "stdDev": 6.48
+        },
+        "throughputReqSec": 2,
+        "avgQueryCount": 23,
+        "avgQueryDurationMs": 13.29,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench05": {
+        "scenario": "BENCH-05: Payment Create Order",
+        "target": "diagnostic / characterization",
+        "gatewayMode": "mocked (0ms gateway overhead, isolated Nexora app+DB latency)",
+        "stats": {
+          "count": 20,
+          "min": 16.54,
+          "max": 26.6,
+          "mean": 20.02,
+          "p50": 19.53,
+          "p95": 23.9,
+          "p99": 26.06,
+          "stdDev": 2.17
+        },
+        "throughputReqSec": 2.07,
+        "avgQueryCount": 16,
+        "avgQueryDurationMs": 10.43,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench06": {
+        "scenario": "BENCH-06: Payment Verification",
+        "target": "diagnostic / characterization",
+        "gatewayMode": "mocked signature & fetch (isolating transactional settlement)",
+        "stats": {
+          "count": 20,
+          "min": 20.66,
+          "max": 37.82,
+          "mean": 25.7,
+          "p50": 24.94,
+          "p95": 28.67,
+          "p99": 35.99,
+          "stdDev": 3.43
+        },
+        "throughputReqSec": 2.06,
+        "avgQueryCount": 21,
+        "avgQueryDurationMs": 13.94,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench07": {
+        "scenario": "BENCH-07: Razorpay Webhook Processing",
+        "target": "p95 < 150 ms",
+        "passed": true,
+        "stats": {
+          "count": 25,
+          "min": 19.09,
+          "max": 90.62,
+          "mean": 25.5,
+          "p50": 22.41,
+          "p95": 29.86,
+          "p99": 76.08,
+          "stdDev": 13.63
+        },
+        "throughputReqSec": 21.64,
+        "avgQueryCount": 22,
+        "avgQueryDurationMs": 13.89,
+        "subScenarios": {
+          "firstCapture": {
+            "count": 25,
+            "min": 19.09,
+            "max": 90.62,
+            "mean": 25.5,
+            "p50": 22.41,
+            "p95": 29.86,
+            "p99": 76.08,
+            "stdDev": 13.63
+          },
+          "duplicateEvent": {
+            "count": 25,
+            "min": 5.4,
+            "max": 74.04,
+            "mean": 10.64,
+            "p50": 8.04,
+            "p95": 11.4,
+            "p99": 59.02,
+            "stdDev": 13.05
+          },
+          "invalidSignature": {
+            "count": 1,
+            "min": 24.26,
+            "max": 24.26,
+            "mean": 24.26,
+            "p50": 24.26,
+            "p95": 24.26,
+            "p99": 24.26,
+            "stdDev": 0
+          }
+        },
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench08": {
+        "scenario": "BENCH-08: Inventory Concurrency (10, 25, 50 Concurrent Reservations)",
+        "results": [
+          {
+            "concurrency": 10,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 9,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 84.27,
+            "avgPerRequestMs": 8.43,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 25,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 24,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 53.36,
+            "avgPerRequestMs": 2.13,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 50,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 49,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 118.78,
+            "avgPerRequestMs": 2.38,
+            "correctnessPassed": true
+          }
+        ],
+        "allCorrectnessPassed": true
+      },
+      "bench09": {
+        "scenario": "BENCH-09: Payment Settlement Concurrency (10 and 25 calls)",
+        "results": [
+          {
+            "concurrency": 10,
+            "totalCalls": 10,
+            "fulfilledCount": 10,
+            "finalOrderStatus": "PAID",
+            "finalStock": 8,
+            "finalReserved": 0,
+            "totalDurationMs": 110.6,
+            "avgPerCallMs": 11.06,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 25,
+            "totalCalls": 25,
+            "fulfilledCount": 25,
+            "finalOrderStatus": "PAID",
+            "finalStock": 8,
+            "finalReserved": 0,
+            "totalDurationMs": 72.59,
+            "avgPerCallMs": 2.9,
+            "correctnessPassed": true
+          }
+        ],
+        "allCorrectnessPassed": true
+      },
+      "bench10": {
+        "scenario": "BENCH-10: Idempotency Concurrency (10 concurrent identical requests)",
+        "concurrency": 10,
+        "successfulResponsesCount": 1,
+        "distinctOrderIdsInResponses": 1,
+        "ordersInDatabase": 1,
+        "reservationsInDatabase": 1,
+        "totalDurationMs": 101.03,
+        "avgPerRequestMs": 10.1,
+        "correctnessPassed": true
+      },
+      "bench11": {
+        "scenario": "BENCH-11: Guest Checkout & Order Retrieval",
+        "target": "diagnostic / characterization",
+        "checkoutStats": {
+          "count": 20,
+          "min": 17.43,
+          "max": 25.47,
+          "mean": 19.18,
+          "p50": 18.46,
+          "p95": 24.05,
+          "p99": 25.19,
+          "stdDev": 2.07
+        },
+        "retrievalStats": {
+          "count": 20,
+          "min": 4.72,
+          "max": 8.11,
+          "mean": 5.74,
+          "p50": 5.22,
+          "p95": 7.51,
+          "p99": 7.99,
+          "stdDev": 0.99
+        },
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench12": {
+        "scenario": "BENCH-12: Admin Operations",
+        "target": "diagnostic / characterization",
+        "endpoints": {
+          "adminProducts": {
+            "url": "/api/admin/products?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 5.86,
+              "max": 10.21,
+              "mean": 7.49,
+              "p50": 7.41,
+              "p95": 9.66,
+              "p99": 10.1,
+              "stdDev": 1.21
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.17
+          },
+          "adminOrders": {
+            "url": "/api/admin/orders?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 7.97,
+              "max": 17.25,
+              "mean": 11.2,
+              "p50": 10.72,
+              "p95": 15.11,
+              "p99": 16.82,
+              "stdDev": 2.32
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 4.36
+          },
+          "adminInventory": {
+            "url": "/api/admin/inventory?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 5.61,
+              "max": 8.86,
+              "mean": 7.3,
+              "p50": 7.24,
+              "p95": 8.74,
+              "p99": 8.84,
+              "stdDev": 1.02
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.14
+          },
+          "adminAuditLogs": {
+            "url": "/api/admin/audit-logs?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 6.21,
+              "max": 9.51,
+              "mean": 7.94,
+              "p50": 8.39,
+              "p95": 8.99,
+              "p99": 9.4,
+              "stdDev": 0.93
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.33
+          }
+        },
+        "errorCount": 0,
+        "errors": []
+      }
+    },
+    {
+      "runIndex": 2,
+      "bench01": {
+        "scenario": "BENCH-01: Product Listing",
+        "target": "p95 < 200 ms",
+        "passed": true,
+        "stats": {
+          "count": 30,
+          "min": 4.24,
+          "max": 9.37,
+          "mean": 5.92,
+          "p50": 5.6,
+          "p95": 8.27,
+          "p99": 9.12,
+          "stdDev": 1.3
+        },
+        "throughputReqSec": 168.62,
+        "avgQueryCount": 2,
+        "avgQueryDurationMs": 1.46,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench02": {
+        "scenario": "BENCH-02: Product Detail",
+        "target": "diagnostic / characterization",
+        "stats": {
+          "count": 30,
+          "min": 3.88,
+          "max": 7.16,
+          "mean": 4.96,
+          "p50": 4.61,
+          "p95": 6.76,
+          "p99": 7.11,
+          "stdDev": 0.92
+        },
+        "throughputReqSec": 201,
+        "avgQueryCount": 1,
+        "avgQueryDurationMs": 0.62,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench03": {
+        "scenario": "BENCH-03: Cart Retrieval",
+        "target": "diagnostic / characterization",
+        "stats": {
+          "count": 25,
+          "min": 5.9,
+          "max": 13.28,
+          "mean": 7.94,
+          "p50": 8.11,
+          "p95": 10.14,
+          "p99": 12.59,
+          "stdDev": 1.54
+        },
+        "throughputReqSec": 125.69,
+        "avgQueryCount": 2,
+        "avgQueryDurationMs": 2.02,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench04": {
+        "scenario": "BENCH-04: Checkout / Order Creation (POST /api/checkout/initiate)",
+        "target": "p95 < 300 ms",
+        "passed": true,
+        "stats": {
+          "count": 20,
+          "min": 20.82,
+          "max": 33.76,
+          "mean": 26.54,
+          "p50": 26.07,
+          "p95": 31.64,
+          "p99": 33.34,
+          "stdDev": 3.08
+        },
+        "throughputReqSec": 2.05,
+        "avgQueryCount": 23,
+        "avgQueryDurationMs": 14.36,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench05": {
+        "scenario": "BENCH-05: Payment Create Order",
+        "target": "diagnostic / characterization",
+        "gatewayMode": "mocked (0ms gateway overhead, isolated Nexora app+DB latency)",
+        "stats": {
+          "count": 20,
+          "min": 17.5,
+          "max": 180.68,
+          "mean": 42.17,
+          "p50": 19.8,
+          "p95": 147.11,
+          "p99": 173.97,
+          "stdDev": 47.45
+        },
+        "throughputReqSec": 1.9,
+        "avgQueryCount": 16,
+        "avgQueryDurationMs": 32.82,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench06": {
+        "scenario": "BENCH-06: Payment Verification",
+        "target": "diagnostic / characterization",
+        "gatewayMode": "mocked signature & fetch (isolating transactional settlement)",
+        "stats": {
+          "count": 20,
+          "min": 21.22,
+          "max": 74.26,
+          "mean": 28.81,
+          "p50": 25.51,
+          "p95": 56.54,
+          "p99": 70.71,
+          "stdDev": 12.57
+        },
+        "throughputReqSec": 1.99,
+        "avgQueryCount": 21,
+        "avgQueryDurationMs": 17.5,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench07": {
+        "scenario": "BENCH-07: Razorpay Webhook Processing",
+        "target": "p95 < 150 ms",
+        "passed": true,
+        "stats": {
+          "count": 25,
+          "min": 18.72,
+          "max": 28.36,
+          "mean": 21.87,
+          "p50": 21.17,
+          "p95": 26.93,
+          "p99": 28.08,
+          "stdDev": 2.54
+        },
+        "throughputReqSec": 26.31,
+        "avgQueryCount": 22,
+        "avgQueryDurationMs": 12.34,
+        "subScenarios": {
+          "firstCapture": {
+            "count": 25,
+            "min": 18.72,
+            "max": 28.36,
+            "mean": 21.87,
+            "p50": 21.17,
+            "p95": 26.93,
+            "p99": 28.08,
+            "stdDev": 2.54
+          },
+          "duplicateEvent": {
+            "count": 25,
+            "min": 5.66,
+            "max": 9.46,
+            "mean": 7.29,
+            "p50": 7.28,
+            "p95": 9.12,
+            "p99": 9.41,
+            "stdDev": 1.02
+          },
+          "invalidSignature": {
+            "count": 1,
+            "min": 4.12,
+            "max": 4.12,
+            "mean": 4.12,
+            "p50": 4.12,
+            "p95": 4.12,
+            "p99": 4.12,
+            "stdDev": 0
+          }
+        },
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench08": {
+        "scenario": "BENCH-08: Inventory Concurrency (10, 25, 50 Concurrent Reservations)",
+        "results": [
+          {
+            "concurrency": 10,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 9,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 80.8,
+            "avgPerRequestMs": 8.08,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 25,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 24,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 68.22,
+            "avgPerRequestMs": 2.73,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 50,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 49,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 104.02,
+            "avgPerRequestMs": 2.08,
+            "correctnessPassed": true
+          }
+        ],
+        "allCorrectnessPassed": true
+      },
+      "bench09": {
+        "scenario": "BENCH-09: Payment Settlement Concurrency (10 and 25 calls)",
+        "results": [
+          {
+            "concurrency": 10,
+            "totalCalls": 10,
+            "fulfilledCount": 10,
+            "finalOrderStatus": "PAID",
+            "finalStock": 8,
+            "finalReserved": 0,
+            "totalDurationMs": 92.03,
+            "avgPerCallMs": 9.2,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 25,
+            "totalCalls": 25,
+            "fulfilledCount": 25,
+            "finalOrderStatus": "PAID",
+            "finalStock": 8,
+            "finalReserved": 0,
+            "totalDurationMs": 78.02,
+            "avgPerCallMs": 3.12,
+            "correctnessPassed": true
+          }
+        ],
+        "allCorrectnessPassed": true
+      },
+      "bench10": {
+        "scenario": "BENCH-10: Idempotency Concurrency (10 concurrent identical requests)",
+        "concurrency": 10,
+        "successfulResponsesCount": 1,
+        "distinctOrderIdsInResponses": 1,
+        "ordersInDatabase": 1,
+        "reservationsInDatabase": 1,
+        "totalDurationMs": 131.56,
+        "avgPerRequestMs": 13.16,
+        "correctnessPassed": true
+      },
+      "bench11": {
+        "scenario": "BENCH-11: Guest Checkout & Order Retrieval",
+        "target": "diagnostic / characterization",
+        "checkoutStats": {
+          "count": 20,
+          "min": 18.59,
+          "max": 25.61,
+          "mean": 21.83,
+          "p50": 21.69,
+          "p95": 25.1,
+          "p99": 25.5,
+          "stdDev": 1.94
+        },
+        "retrievalStats": {
+          "count": 20,
+          "min": 5.6,
+          "max": 11.23,
+          "mean": 7.44,
+          "p50": 7.38,
+          "p95": 10.39,
+          "p99": 11.06,
+          "stdDev": 1.45
+        },
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench12": {
+        "scenario": "BENCH-12: Admin Operations",
+        "target": "diagnostic / characterization",
+        "endpoints": {
+          "adminProducts": {
+            "url": "/api/admin/products?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 6.16,
+              "max": 11.79,
+              "mean": 8.43,
+              "p50": 7.86,
+              "p95": 11.68,
+              "p99": 11.77,
+              "stdDev": 1.72
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.45
+          },
+          "adminOrders": {
+            "url": "/api/admin/orders?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 8.69,
+              "max": 12.54,
+              "mean": 10.7,
+              "p50": 11.14,
+              "p95": 12.05,
+              "p99": 12.45,
+              "stdDev": 1.2
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 4.96
+          },
+          "adminInventory": {
+            "url": "/api/admin/inventory?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 6.98,
+              "max": 11.6,
+              "mean": 8.36,
+              "p50": 7.65,
+              "p95": 11.52,
+              "p99": 11.59,
+              "stdDev": 1.4
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.34
+          },
+          "adminAuditLogs": {
+            "url": "/api/admin/audit-logs?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 5.93,
+              "max": 10.41,
+              "mean": 8.58,
+              "p50": 8.69,
+              "p95": 10.11,
+              "p99": 10.35,
+              "stdDev": 1.27
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.69
+          }
+        },
+        "errorCount": 0,
+        "errors": []
+      }
+    },
+    {
+      "runIndex": 3,
+      "bench01": {
+        "scenario": "BENCH-01: Product Listing",
+        "target": "p95 < 200 ms",
+        "passed": true,
+        "stats": {
+          "count": 30,
+          "min": 4.97,
+          "max": 11.53,
+          "mean": 6.97,
+          "p50": 7,
+          "p95": 10.24,
+          "p99": 11.33,
+          "stdDev": 1.6
+        },
+        "throughputReqSec": 143.27,
+        "avgQueryCount": 2,
+        "avgQueryDurationMs": 1.71,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench02": {
+        "scenario": "BENCH-02: Product Detail",
+        "target": "diagnostic / characterization",
+        "stats": {
+          "count": 30,
+          "min": 4.34,
+          "max": 8.87,
+          "mean": 5.75,
+          "p50": 5.02,
+          "p95": 8.4,
+          "p99": 8.82,
+          "stdDev": 1.42
+        },
+        "throughputReqSec": 173.68,
+        "avgQueryCount": 1,
+        "avgQueryDurationMs": 0.71,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench03": {
+        "scenario": "BENCH-03: Cart Retrieval",
+        "target": "diagnostic / characterization",
+        "stats": {
+          "count": 25,
+          "min": 8.13,
+          "max": 15.81,
+          "mean": 11.45,
+          "p50": 11.42,
+          "p95": 14.06,
+          "p99": 15.4,
+          "stdDev": 1.89
+        },
+        "throughputReqSec": 87.23,
+        "avgQueryCount": 2,
+        "avgQueryDurationMs": 2.96,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench04": {
+        "scenario": "BENCH-04: Checkout / Order Creation (POST /api/checkout/initiate)",
+        "target": "p95 < 300 ms",
+        "passed": true,
+        "stats": {
+          "count": 20,
+          "min": 20.84,
+          "max": 43.38,
+          "mean": 28.07,
+          "p50": 28.09,
+          "p95": 33.9,
+          "p99": 41.48,
+          "stdDev": 4.91
+        },
+        "throughputReqSec": 1.95,
+        "avgQueryCount": 23,
+        "avgQueryDurationMs": 15.43,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench05": {
+        "scenario": "BENCH-05: Payment Create Order",
+        "target": "diagnostic / characterization",
+        "gatewayMode": "mocked (0ms gateway overhead, isolated Nexora app+DB latency)",
+        "stats": {
+          "count": 20,
+          "min": 16.69,
+          "max": 23.22,
+          "mean": 19.25,
+          "p50": 19.53,
+          "p95": 21.8,
+          "p99": 22.94,
+          "stdDev": 1.62
+        },
+        "throughputReqSec": 2.03,
+        "avgQueryCount": 16,
+        "avgQueryDurationMs": 9.97,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench06": {
+        "scenario": "BENCH-06: Payment Verification",
+        "target": "diagnostic / characterization",
+        "gatewayMode": "mocked signature & fetch (isolating transactional settlement)",
+        "stats": {
+          "count": 20,
+          "min": 19.44,
+          "max": 29.4,
+          "mean": 23.53,
+          "p50": 23.11,
+          "p95": 28.03,
+          "p99": 29.13,
+          "stdDev": 2.89
+        },
+        "throughputReqSec": 2.01,
+        "avgQueryCount": 21,
+        "avgQueryDurationMs": 12.59,
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench07": {
+        "scenario": "BENCH-07: Razorpay Webhook Processing",
+        "target": "p95 < 150 ms",
+        "passed": true,
+        "stats": {
+          "count": 25,
+          "min": 19.44,
+          "max": 30.25,
+          "mean": 23.05,
+          "p50": 22.35,
+          "p95": 27.7,
+          "p99": 29.69,
+          "stdDev": 2.71
+        },
+        "throughputReqSec": 24.59,
+        "avgQueryCount": 22,
+        "avgQueryDurationMs": 12.85,
+        "subScenarios": {
+          "firstCapture": {
+            "count": 25,
+            "min": 19.44,
+            "max": 30.25,
+            "mean": 23.05,
+            "p50": 22.35,
+            "p95": 27.7,
+            "p99": 29.69,
+            "stdDev": 2.71
+          },
+          "duplicateEvent": {
+            "count": 25,
+            "min": 5.97,
+            "max": 11.24,
+            "mean": 8.14,
+            "p50": 8.23,
+            "p95": 9.64,
+            "p99": 10.87,
+            "stdDev": 1.11
+          },
+          "invalidSignature": {
+            "count": 1,
+            "min": 5.09,
+            "max": 5.09,
+            "mean": 5.09,
+            "p50": 5.09,
+            "p95": 5.09,
+            "p99": 5.09,
+            "stdDev": 0
+          }
+        },
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench08": {
+        "scenario": "BENCH-08: Inventory Concurrency (10, 25, 50 Concurrent Reservations)",
+        "results": [
+          {
+            "concurrency": 10,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 9,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 66.42,
+            "avgPerRequestMs": 6.64,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 25,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 24,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 50.18,
+            "avgPerRequestMs": 2.01,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 50,
+            "stockInitial": 1,
+            "successful": 1,
+            "conflict409": 49,
+            "unexpectedFailures": 0,
+            "finalStock": 1,
+            "finalReserved": 1,
+            "totalDurationMs": 100.03,
+            "avgPerRequestMs": 2,
+            "correctnessPassed": true
+          }
+        ],
+        "allCorrectnessPassed": true
+      },
+      "bench09": {
+        "scenario": "BENCH-09: Payment Settlement Concurrency (10 and 25 calls)",
+        "results": [
+          {
+            "concurrency": 10,
+            "totalCalls": 10,
+            "fulfilledCount": 10,
+            "finalOrderStatus": "PAID",
+            "finalStock": 8,
+            "finalReserved": 0,
+            "totalDurationMs": 82.31,
+            "avgPerCallMs": 8.23,
+            "correctnessPassed": true
+          },
+          {
+            "concurrency": 25,
+            "totalCalls": 25,
+            "fulfilledCount": 25,
+            "finalOrderStatus": "PAID",
+            "finalStock": 8,
+            "finalReserved": 0,
+            "totalDurationMs": 69.96,
+            "avgPerCallMs": 2.8,
+            "correctnessPassed": true
+          }
+        ],
+        "allCorrectnessPassed": true
+      },
+      "bench10": {
+        "scenario": "BENCH-10: Idempotency Concurrency (10 concurrent identical requests)",
+        "concurrency": 10,
+        "successfulResponsesCount": 1,
+        "distinctOrderIdsInResponses": 1,
+        "ordersInDatabase": 1,
+        "reservationsInDatabase": 1,
+        "totalDurationMs": 92,
+        "avgPerRequestMs": 9.2,
+        "correctnessPassed": true
+      },
+      "bench11": {
+        "scenario": "BENCH-11: Guest Checkout & Order Retrieval",
+        "target": "diagnostic / characterization",
+        "checkoutStats": {
+          "count": 20,
+          "min": 15.61,
+          "max": 24.52,
+          "mean": 19.53,
+          "p50": 19.82,
+          "p95": 23.76,
+          "p99": 24.37,
+          "stdDev": 2.65
+        },
+        "retrievalStats": {
+          "count": 20,
+          "min": 4.69,
+          "max": 8.6,
+          "mean": 6.7,
+          "p50": 6.83,
+          "p95": 8.52,
+          "p99": 8.58,
+          "stdDev": 1.16
+        },
+        "errorCount": 0,
+        "errors": []
+      },
+      "bench12": {
+        "scenario": "BENCH-12: Admin Operations",
+        "target": "diagnostic / characterization",
+        "endpoints": {
+          "adminProducts": {
+            "url": "/api/admin/products?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 5.52,
+              "max": 15.89,
+              "mean": 8.39,
+              "p50": 7.76,
+              "p95": 13.19,
+              "p99": 15.35,
+              "stdDev": 2.6
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.59
+          },
+          "adminOrders": {
+            "url": "/api/admin/orders?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 7.86,
+              "max": 12.76,
+              "mean": 10.3,
+              "p50": 10.36,
+              "p95": 12.4,
+              "p99": 12.69,
+              "stdDev": 1.35
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 5.06
+          },
+          "adminInventory": {
+            "url": "/api/admin/inventory?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 5.29,
+              "max": 9.17,
+              "mean": 7.18,
+              "p50": 6.8,
+              "p95": 9,
+              "p99": 9.13,
+              "stdDev": 1.25
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.12
+          },
+          "adminAuditLogs": {
+            "url": "/api/admin/audit-logs?page=1&limit=10",
+            "stats": {
+              "count": 15,
+              "min": 5.5,
+              "max": 11.03,
+              "mean": 8.34,
+              "p50": 8.43,
+              "p95": 10.56,
+              "p99": 10.94,
+              "stdDev": 1.47
+            },
+            "avgQueryCount": 3,
+            "avgQueryDurationMs": 2.96
+          }
+        },
+        "errorCount": 0,
+        "errors": []
+      }
+    }
+  ]
+}
