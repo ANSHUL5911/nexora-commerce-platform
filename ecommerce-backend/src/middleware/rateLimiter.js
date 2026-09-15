@@ -41,7 +41,7 @@ export const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || '127.0.0.1',
   handler: createRateLimitHandler('General rate limit exceeded. Please wait before making more requests.'),
 });
 
@@ -55,7 +55,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || '127.0.0.1',
   handler: createRateLimitHandler('Too many authentication attempts. Please try again in 1 minute.'),
 });
 
@@ -69,7 +69,7 @@ export const checkoutLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || '127.0.0.1',
   handler: createRateLimitHandler('Checkout rate limit exceeded. Please wait before attempting checkout again.'),
 });
 
@@ -83,7 +83,7 @@ export const guestLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
-  keyGenerator: (req) => (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : req.ip),
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || '127.0.0.1',
   handler: createRateLimitHandler('Guest action rate limit exceeded. Please try again later.'),
 });
 

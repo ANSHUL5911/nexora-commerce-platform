@@ -1,6 +1,7 @@
 import { findValidSession, touchSessionIfDue, isValidSessionIdFormat } from './session.service.js';
 import { toSafeUserDTO } from './auth.dto.js';
 import { AuthenticationError } from '../../utils/errors.js';
+import { config } from '../../config/env.js';
 
 export const SESSION_COOKIE_NAME = '__Host-nexora_sid';
 
@@ -21,7 +22,14 @@ export async function requireAuth(req, res, next) {
 
     if (!sessionContext) {
       // Clear stale/expired cookie
-      res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
+      const isProd = config.NODE_ENV === 'production';
+      const isSecure = isProd ? true : Boolean(config.SESSION_SECURE_COOKIE);
+      res.clearCookie(SESSION_COOKIE_NAME, {
+        path: '/',
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: config.SESSION_SAME_SITE || 'lax',
+      });
       throw new AuthenticationError('Session has expired or is invalid. Please log in again.', 'AUTHENTICATION_REQUIRED');
     }
 

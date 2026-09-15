@@ -32,6 +32,7 @@ export const corsMiddleware = cors({
     'X-Guest-Token',
     'X-Guest-Order-Token',
     'Idempotency-Key',
+    'X-CSRF-Token',
   ],
   exposedHeaders: ['X-Request-Id'],
   maxAge: 86400, // 24 hours preflight cache

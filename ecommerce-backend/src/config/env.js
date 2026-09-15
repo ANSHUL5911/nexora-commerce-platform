@@ -25,6 +25,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5000),
 
   // PostgreSQL Configuration
+  DATABASE_URL: z.string().optional(),
   DB_HOST: z.string().min(1).default('localhost'),
   DB_PORT: z.coerce.number().int().positive().default(5432),
   DB_NAME: z.string().min(1).default('nexora_dev'),
@@ -57,6 +58,9 @@ const envSchema = z.object({
   // CORS & Client Origin
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
+  // Reverse Proxy Configuration
+  TRUST_PROXY: z.string().optional().default(''),
+
   // Razorpay Gateway
   RAZORPAY_KEY_ID: z.string().default('rzp_test_placeholder_key_id'),
   RAZORPAY_KEY_SECRET: z.string().default('placeholder_razorpay_key_secret'),
@@ -69,6 +73,8 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_CHECKOUT: z.coerce.number().int().positive().default(10),
   RATE_LIMIT_MAX_GUEST: z.coerce.number().int().positive().default(15),
 });
+
+const SAFE_TRUST_PROXY_PATTERN = /^(true|false|loopback|linklocal|uniquelocal|\d+|((?:[0-9]{1,3}\.){3}[0-9]{1,3}(?:\/[0-9]{1,2})?|::1|[a-fA-F0-9:]+(?:\/[0-9]{1,3})?)(?:\s*,\s*((?:[0-9]{1,3}\.){3}[0-9]{1,3}(?:\/[0-9]{1,2})?|::1|[a-fA-F0-9:]+(?:\/[0-9]{1,3})?))*)$/i;
 
 /**
  * Validates raw environment configuration with strict production safety rules.
@@ -88,6 +94,32 @@ export function validateConfig(rawEnv = process.env) {
   }
 
   const parsedConfig = result.data;
+
+  // Strict TRUST_PROXY validation (must not blindly accept arbitrary/unsafe strings)
+  if (parsedConfig.TRUST_PROXY && parsedConfig.TRUST_PROXY.trim() !== '') {
+    const trimmed = parsedConfig.TRUST_PROXY.trim();
+    if (!SAFE_TRUST_PROXY_PATTERN.test(trimmed)) {
+      throw new Error(
+        `[ConfigValidationError] Invalid TRUST_PROXY value '${trimmed}'. Must be a hop count (e.g. '1', '2'), boolean, predefined alias ('loopback', 'linklocal', 'uniquelocal'), or documented IP/CIDR.`
+      );
+    }
+  }
+
+  // Validate DATABASE_URL format if provided
+  if (parsedConfig.DATABASE_URL && parsedConfig.DATABASE_URL.trim() !== '') {
+    const dbUrl = parsedConfig.DATABASE_URL.trim();
+    if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
+      throw new Error('[ConfigValidationError] DATABASE_URL must start with postgresql:// or postgres://');
+    }
+    try {
+      const parsedUrl = new URL(dbUrl);
+      if (!parsedUrl.host) {
+        throw new Error('Missing host in database URL');
+      }
+    } catch {
+      throw new Error('[ConfigValidationError] DATABASE_URL is malformed and cannot be parsed.');
+    }
+  }
 
   // Strict production assertions
   if (parsedConfig.NODE_ENV === 'production') {
@@ -113,8 +145,19 @@ export function validateConfig(rawEnv = process.env) {
       productionErrors.push('RAZORPAY_WEBHOOK_SECRET must be configured and cannot be a placeholder in production.');
     }
 
-    if (!parsedConfig.DB_PASSWORD) {
-      productionErrors.push('DB_PASSWORD must not be empty in production.');
+    // Database credentials validation with explicit precedence:
+    // 1. If DATABASE_URL is present, it must not be a placeholder
+    // 2. If DATABASE_URL is absent, discrete DB_PASSWORD and DB_HOST are required
+    // 3. If neither is valid, fail startup
+    const hasDatabaseUrl = Boolean(parsedConfig.DATABASE_URL && parsedConfig.DATABASE_URL.trim());
+    if (hasDatabaseUrl) {
+      if (isObviousPlaceholder(parsedConfig.DATABASE_URL)) {
+        productionErrors.push('DATABASE_URL cannot be a placeholder in production.');
+      }
+    } else {
+      if (!parsedConfig.DB_PASSWORD) {
+        productionErrors.push('Production requires either a valid DATABASE_URL or non-empty DB_PASSWORD with discrete DB credentials.');
+      }
     }
 
     if (parsedConfig.CORS_ORIGIN.includes('*')) {

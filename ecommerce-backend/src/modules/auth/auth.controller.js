@@ -43,8 +43,20 @@ export function setAuthCookies(res, sid, csrfToken) {
  * Clear authentication & CSRF cookies upon logout or session invalidation.
  */
 export function clearAuthCookies(res) {
-  res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
-  res.clearCookie(CSRF_COOKIE_NAME, { path: '/' });
+  const isProd = config.NODE_ENV === 'production';
+  const isSecure = isProd ? true : Boolean(config.SESSION_SECURE_COOKIE);
+  res.clearCookie(SESSION_COOKIE_NAME, {
+    path: '/',
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: config.SESSION_SAME_SITE || 'lax',
+  });
+  res.clearCookie(CSRF_COOKIE_NAME, {
+    path: '/',
+    httpOnly: false,
+    secure: isSecure,
+    sameSite: config.SESSION_SAME_SITE || 'lax',
+  });
 }
 
 /**

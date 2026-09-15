@@ -15,7 +15,7 @@ async function startServer() {
       port: config.PORT,
     });
 
-    // Attempt database connection check (non-blocking warning if local dev DB is not yet running)
+    // Attempt database connection check
     if (config.NODE_ENV !== 'test') {
       try {
         await testDbConnection();
@@ -25,6 +25,13 @@ async function startServer() {
         });
       } catch (dbErr) {
         dbConnected = false;
+        if (config.NODE_ENV === 'production') {
+          logger.error(`Fatal production startup error: PostgreSQL connection failed: ${dbErr.message}`, {
+            event: 'application.startup.failed',
+            databaseConnected: false,
+          });
+          process.exit(1);
+        }
         logger.warn(`PostgreSQL connection check skipped/failed: ${dbErr.message}. Server starting in foundation mode.`, {
           databaseConnected: false,
         });
@@ -40,24 +47,62 @@ async function startServer() {
       });
     });
 
+    let isShuttingDown = false;
+
     const gracefulShutdown = async (signal) => {
-      logger.info(`Received ${signal}. Shutting down gracefully...`, {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+
+      logger.info(`Received ${signal}. Starting graceful shutdown...`, {
         event: 'application.shutdown.started',
         signal,
       });
-      if (server) {
-        server.close(async () => {
-          logger.info('HTTP server closed.', {
+
+      // 10-second safety timeout: force process exit if in-flight connections hang
+      const forceExitTimer = setTimeout(() => {
+        logger.error('Graceful shutdown timed out after 10s. Forcing process exit.', {
+          event: 'application.shutdown.timeout',
+          signal,
+        });
+        process.exit(1);
+      }, 10000);
+      forceExitTimer.unref();
+
+      try {
+        if (server) {
+          // 1. Stop accepting new HTTP connections and allow active requests to finish
+          server.close(async (err) => {
+            if (err) {
+              logger.error('Error closing HTTP server during shutdown', { error: err.message });
+            } else {
+              logger.info('HTTP server closed successfully.', {
+                event: 'application.shutdown.http_closed',
+              });
+            }
+
+            // 2. Close PostgreSQL connection pool safely (in-flight queries complete or abort safely at DB level)
+            await closeDbConnection();
+            logger.info('Database connections closed. Application shutdown completed.', {
+              event: 'application.shutdown.completed',
+            });
+            clearTimeout(forceExitTimer);
+            process.exit(0);
+          });
+        } else {
+          await closeDbConnection();
+          logger.info('Application shutdown completed.', {
             event: 'application.shutdown.completed',
           });
-          await closeDbConnection();
+          clearTimeout(forceExitTimer);
           process.exit(0);
+        }
+      } catch (shutdownErr) {
+        logger.error('Error during graceful shutdown sequence', {
+          event: 'application.shutdown.failed',
+          errorMessage: shutdownErr?.message,
         });
-      } else {
-        logger.info('Application shutdown completed.', {
-          event: 'application.shutdown.completed',
-        });
-        process.exit(0);
+        clearTimeout(forceExitTimer);
+        process.exit(1);
       }
     };
 

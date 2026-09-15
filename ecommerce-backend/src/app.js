@@ -18,6 +18,7 @@ import { paymentRouter } from './modules/payments/payment.routes.js';
 import { webhookRouter } from './modules/payments/webhook.routes.js';
 import { adminRouter } from './modules/admin/admin.routes.js';
 import { config } from './config/env.js';
+import { sequelize } from './config/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,23 @@ const backendRoot = path.resolve(__dirname, '..');
 
 export function createApp() {
   const app = express();
+
+  // Reverse proxy trusted hops configuration (if explicitly configured)
+  if (config.TRUST_PROXY && config.TRUST_PROXY.trim() !== '') {
+    const val = config.TRUST_PROXY.trim();
+    if (val.toLowerCase() === 'true') {
+      app.set('trust proxy', true);
+    } else if (val.toLowerCase() === 'false') {
+      app.set('trust proxy', false);
+    } else if (/^\d+$/.test(val)) {
+      app.set('trust proxy', parseInt(val, 10));
+    } else {
+      app.set('trust proxy', val);
+    }
+  } else if (config.NODE_ENV === 'test') {
+    // In test harness, trust loopback peer (127.0.0.1) so test suites can simulate distinct client IPs
+    app.set('trust proxy', 'loopback');
+  }
 
   // 1. Request ID correlation
   app.use(requestId);
@@ -50,37 +68,8 @@ export function createApp() {
   // 5. Request logging
   app.use(requestLogger);
 
-  // 6. Application-wide Rate Limiting on API endpoints
-  app.use('/api', generalLimiter);
-
-  // 7. Authentication Router
-  app.use('/api/auth', authRouter);
-
-  // 8. Products & Catalog Router
-  app.use('/api/products', productRouter);
-
-  // 9. Cart Router
-  app.use('/api/cart', cartRouter);
-
-  // 10. Inventory & Reservation Router
-  app.use('/api/inventory', inventoryRouter);
-
-  // 11. Orders & OrderItems Router
-  app.use('/api/orders', orderRouter);
-
-  // 12. Checkout Initiation Router
-  app.use('/api/checkout', checkoutRouter);
-
-  // 13. Payments & Razorpay Router
-  app.use('/api/payments', paymentRouter);
-
-  // 14. Asynchronous Razorpay Webhook Router
-  app.use('/api/webhooks', webhookRouter);
-
-  // 15. Admin Management Router (Refunds, Restocking)
-  app.use('/api/admin', adminRouter);
-
-  // Health check endpoint
+  // 6. Operational Health & Readiness Endpoints (Mounted BEFORE general rate limiter to prevent load balancer polling exhaustion)
+  // Liveness Check: process is running
   app.get('/api/health', (req, res) => {
     res.status(200).json({
       status: 'ok',
@@ -90,6 +79,58 @@ export function createApp() {
       requestId: req.id,
     });
   });
+
+  // Readiness Check: lightweight database connectivity check without leaking credentials, SQL, or stack traces
+  app.get('/api/health/ready', async (req, res) => {
+    try {
+      await sequelize.authenticate();
+      res.status(200).json({
+        status: 'ready',
+        service: 'nexora-backend',
+        database: 'connected',
+        timestamp: new Date().toISOString(),
+        requestId: req.id,
+      });
+    } catch {
+      res.status(503).json({
+        status: 'not_ready',
+        service: 'nexora-backend',
+        database: 'disconnected',
+        timestamp: new Date().toISOString(),
+        requestId: req.id,
+      });
+    }
+  });
+
+  // 7. Application-wide Rate Limiting on API endpoints
+  app.use('/api', generalLimiter);
+
+  // 8. Authentication Router
+  app.use('/api/auth', authRouter);
+
+  // 9. Products & Catalog Router
+  app.use('/api/products', productRouter);
+
+  // 10. Cart Router
+  app.use('/api/cart', cartRouter);
+
+  // 11. Inventory & Reservation Router
+  app.use('/api/inventory', inventoryRouter);
+
+  // 12. Orders & OrderItems Router
+  app.use('/api/orders', orderRouter);
+
+  // 13. Checkout Initiation Router
+  app.use('/api/checkout', checkoutRouter);
+
+  // 14. Payments & Razorpay Router
+  app.use('/api/payments', paymentRouter);
+
+  // 15. Asynchronous Razorpay Webhook Router
+  app.use('/api/webhooks', webhookRouter);
+
+  // 16. Admin Management Router (Refunds, Restocking)
+  app.use('/api/admin', adminRouter);
 
   // 10. Static assets (images)
   app.use('/images', express.static(path.join(backendRoot, 'images')));

@@ -29,11 +29,13 @@ export function generateIdempotencyKey() {
   });
 }
 
+const configuredApiBase = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '/api';
+
 /**
  * Centralized Axios client instance configured for Nexora API.
  */
 export const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: configuredApiBase,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -53,8 +55,12 @@ apiClient.interceptors.request.use(
     const method = (config.method || 'get').toLowerCase();
     const isMutating = MUTATING_METHODS.has(method);
 
-    // Only attach CSRF to same-origin / relative / /api mutating requests
-    const isInternal = !config.url || config.url.startsWith('/') || config.url.startsWith('/api') || config.url.startsWith('http://localhost:5000');
+    // Only attach CSRF to same-origin / relative / /api or configured API base mutating requests
+    const isInternal =
+      !config.url ||
+      config.url.startsWith('/') ||
+      config.url.startsWith('/api') ||
+      (configuredApiBase !== '/api' && config.url.startsWith(configuredApiBase));
 
     if (isMutating && isInternal) {
       const token = getCsrfToken();
