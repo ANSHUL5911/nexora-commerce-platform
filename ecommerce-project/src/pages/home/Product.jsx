@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { formatMoney } from '../../utils/money.js';
 import { cartApi } from '../../api/cart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
@@ -44,7 +45,11 @@ export function Product({ product, loadCart }) {
   return (
     <article className="product-card" data-testid="product-container">
       {/* Product Image */}
-      <div className="product-card-image-wrap">
+      <Link
+        to={`/product/${product.id}`}
+        className="product-card-image-wrap"
+        aria-label={`View ${product.name}`}
+      >
         <img
           className="product-card-image"
           data-testid="product-image"
@@ -52,7 +57,7 @@ export function Product({ product, loadCart }) {
           alt={product.name}
           loading="lazy"
         />
-      </div>
+      </Link>
 
       {/* Product Content */}
       <div className="product-card-content">
@@ -66,7 +71,12 @@ export function Product({ product, loadCart }) {
         </div>
 
         <h3 className="product-card-title" title={product.name}>
-          {product.name}
+          <Link
+            to={`/product/${product.id}`}
+            className="product-card-title-link"
+          >
+            {product.name}
+          </Link>
         </h3>
 
         {/* Rating Metadata (Hidden / subtle test-accessible) */}

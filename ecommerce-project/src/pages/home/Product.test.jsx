@@ -1,6 +1,7 @@
 import { it, expect, describe, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import { cartApi } from '../../api/cart';
 import { Product } from './Product';
 
@@ -42,8 +43,16 @@ describe('Product component', () => {
     cartApi.addItem.mockResolvedValue({ success: true });
   });
 
+  const renderWithRouter = (ui, initialEntry = '/') => {
+    return render(
+      <MemoryRouter initialEntries={[initialEntry]}>
+        {ui}
+      </MemoryRouter>
+    );
+  };
+
   it('displays the product details correctly', () => {
-    render(<Product product={product} loadCart={loadCart} />);
+    renderWithRouter(<Product product={product} loadCart={loadCart} />);
 
     expect(
       screen.getByText('Black and Gray Athletic Cotton Socks - 6 Pairs')
@@ -66,10 +75,83 @@ describe('Product component', () => {
     ).toBeInTheDocument();
   });
 
-  it('adds a product to the cart', async () => {
-    render(<Product product={product} loadCart={loadCart} />);
+  it('renders product image and title as links targeting /product/:id', () => {
+    renderWithRouter(<Product product={product} loadCart={loadCart} />);
 
+    const titleLink = screen.getByRole('link', { name: 'Black and Gray Athletic Cotton Socks - 6 Pairs' });
+    expect(titleLink).toHaveAttribute('href', `/product/${product.id}`);
+
+    const image = screen.getByTestId('product-image');
+    const imageLink = image.closest('a');
+    expect(imageLink).toBeInTheDocument();
+    expect(imageLink).toHaveAttribute('href', `/product/${product.id}`);
+  });
+
+  it('navigates to product detail page when clicking the title link', async () => {
     const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Product product={product} loadCart={loadCart} />} />
+          <Route path="/product/:productId" element={<div data-testid="pdp-target">Product Detail View</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const titleLink = screen.getByRole('link', { name: 'Black and Gray Athletic Cotton Socks - 6 Pairs' });
+    await user.click(titleLink);
+
+    expect(await screen.findByTestId('pdp-target')).toBeInTheDocument();
+  });
+
+  it('navigates to product detail page when clicking the image link', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Product product={product} loadCart={loadCart} />} />
+          <Route path="/product/:productId" element={<div data-testid="pdp-target">Product Detail View</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const image = screen.getByTestId('product-image');
+    await user.click(image);
+
+    expect(await screen.findByTestId('pdp-target')).toBeInTheDocument();
+  });
+
+  it('can select a quantity without triggering navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Product product={product} loadCart={loadCart} />} />
+          <Route path="/product/:productId" element={<div data-testid="pdp-target">Product Detail View</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const quantitySelector = screen.getByTestId('quantity-selector');
+    expect(quantitySelector).toHaveValue('1');
+
+    await user.selectOptions(quantitySelector, '4');
+    expect(quantitySelector).toHaveValue('4');
+
+    expect(screen.queryByTestId('pdp-target')).not.toBeInTheDocument();
+  });
+
+  it('adds a product to the cart without triggering navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Product product={product} loadCart={loadCart} />} />
+          <Route path="/product/:productId" element={<div data-testid="pdp-target">Product Detail View</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
     const addToCartButton = screen.getByTestId('add-to-cart-button');
     await user.click(addToCartButton);
 
@@ -78,13 +160,8 @@ describe('Product component', () => {
       quantity: 1,
     });
     expect(loadCart).toHaveBeenCalled();
-  });
 
-  it('can select a quantity', () => {
-    render(<Product product={product} loadCart={loadCart} />);
-
-    const quantitySelector = screen.getByTestId('quantity-selector');
-
-    expect(quantitySelector).toHaveValue('1');
+    // Verify Add to Cart does NOT navigate to PDP
+    expect(screen.queryByTestId('pdp-target')).not.toBeInTheDocument();
   });
 });
