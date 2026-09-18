@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
-import { NavLink, useSearchParams, useNavigate } from 'react-router';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { NavLink, useSearchParams, useNavigate, useLocation } from 'react-router';
 import { AuthModal } from './auth/AuthModal.jsx';
 import { authApi } from '../api/auth.js';
 import './Header.css';
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const search = searchParams.get('search') || '';
   const [searchInput, setSearchInput] = useState(search);
+  const lastCommittedSearchRef = useRef(search);
+  const debounceTimerRef = useRef(null);
 
   const [currentUser, setCurrentUser] = useState(propUser || null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -42,15 +47,74 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
 
   const totalQuantity = (cart || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
 
+  const applySearch = useCallback(
+    (rawQuery) => {
+      const trimmed = rawQuery.trim();
+      lastCommittedSearchRef.current = trimmed;
+
+      if (location.pathname === '/') {
+        setSearchParams(
+          (prev) => {
+            const current = prev.get('search') || '';
+            if (current === trimmed) {
+              return prev;
+            }
+            const next = new URLSearchParams(prev);
+            if (trimmed) {
+              next.set('search', trimmed);
+            } else {
+              next.delete('search');
+            }
+            return next;
+          },
+          { replace: true }
+        );
+      } else {
+        if (trimmed) {
+          navigate(`/?search=${encodeURIComponent(trimmed)}`);
+        } else {
+          navigate('/');
+        }
+      }
+    },
+    [location.pathname, setSearchParams, navigate]
+  );
+
+  // Synchronize searchInput when search in URL changes externally (e.g., navigation or reset)
+  useEffect(() => {
+    if (search !== lastCommittedSearchRef.current) {
+      lastCommittedSearchRef.current = search;
+      setSearchInput(search);
+    }
+  }, [search]);
+
+  // Debounced live search while user types (~300ms idle delay)
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    const currentParam = searchParams.get('search') || '';
+
+    // If trimmed input is already reflected in current URL param, do not schedule
+    if (trimmed === currentParam) {
+      return;
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      applySearch(searchInput);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchInput, searchParams, applySearch]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    if (searchInput.trim()) {
-      setSearchParams({ search: searchInput.trim() }, { replace: true });
-      navigate(`/?search=${encodeURIComponent(searchInput.trim())}`);
-    } else {
-      setSearchParams({}, { replace: true });
-      navigate('/');
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+    applySearch(searchInput);
     setIsMobileMenuOpen(false);
   };
 

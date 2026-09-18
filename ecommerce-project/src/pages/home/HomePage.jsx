@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { Header } from '../../components/Header.jsx';
 import { productsApi } from '../../api/products.js';
@@ -8,7 +8,15 @@ import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { ProductsGrid } from './ProductsGrid.jsx';
 import './HomePage.css';
 
-const CATEGORIES = ['ALL', 'APPAREL', 'ESSENTIALS', 'FOOTWEAR', 'ACCESSORIES'];
+const CATEGORIES = ['ALL', 'APPAREL', 'LIVING', 'FOOTWEAR', 'ACCESSORIES'];
+
+const CATEGORY_MAP = {
+  ALL: undefined,
+  APPAREL: 'Apparel',
+  LIVING: 'Living',
+  FOOTWEAR: 'Footwear',
+  ACCESSORIES: 'Accessories',
+};
 
 export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
   const [products, setProducts] = useState([]);
@@ -18,36 +26,39 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
 
   const [searchParams] = useSearchParams();
   const search = searchParams.get('search') || undefined;
+  const requestIdRef = useRef(0);
 
   const fetchProducts = useCallback(async () => {
+    const currentRequestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
+      const canonicalCategory = CATEGORY_MAP[selectedCategory];
       const data = await productsApi.listProducts({
         search,
-        category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+        category: canonicalCategory,
       });
+      // Stale-response guard: ignore response if a newer request was dispatched
+      if (currentRequestId !== requestIdRef.current) return;
       const rawList = Array.isArray(data) ? data : (data?.products || data?.data?.products || []);
       setProducts(rawList.map(adaptProduct));
     } catch (err) {
+      if (currentRequestId !== requestIdRef.current) return;
       setError(err?.response?.data?.error?.message || err?.message || 'Failed to load catalog products');
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [search, selectedCategory]);
 
   useEffect(() => {
     fetchProducts();
+    return () => {
+      // Invalidate pending response handling on unmount
+      requestIdRef.current += 1;
+    };
   }, [fetchProducts]);
-
-  const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'ALL') return products;
-    return products.filter((p) => {
-      const cat = (p.category || '').toUpperCase();
-      const kw = (p.keywords || []).map((k) => k.toUpperCase());
-      return cat.includes(selectedCategory) || kw.includes(selectedCategory);
-    });
-  }, [products, selectedCategory]);
 
   return (
     <>
@@ -125,7 +136,7 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
         )}
 
         {/* Empty State */}
-        {!loading && !error && filteredProducts.length === 0 && (
+        {!loading && !error && products.length === 0 && (
           <EmptyState
             title="No products found"
             description={search ? `No items match your search for "${search}". Try checking for spelling errors or browsing all categories.` : 'No products are currently available in this category.'}
@@ -135,8 +146,8 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
         )}
 
         {/* Products Grid */}
-        {!loading && !error && filteredProducts.length > 0 && (
-          <ProductsGrid products={filteredProducts} loadCart={loadCart} />
+        {!loading && !error && products.length > 0 && (
+          <ProductsGrid products={products} loadCart={loadCart} />
         )}
       </main>
     </>
