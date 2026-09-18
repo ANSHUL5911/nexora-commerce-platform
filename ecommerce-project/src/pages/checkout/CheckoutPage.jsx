@@ -9,9 +9,10 @@ import { PaymentSummary } from './PaymentSummary';
 import { DEFAULT_DELIVERY_OPTIONS } from './deliveryOptionsData';
 import { checkoutApi } from '../../api/checkout';
 import { paymentsApi } from '../../api/payments';
+import { clearGuestCart } from '../../api/guestCart';
 import './CheckoutPage.css';
 
-export function CheckoutPage({ cart = [], loadCart }) {
+export function CheckoutPage({ cart = [], loadCart, currentUser }) {
     const navigate = useNavigate();
 
     // Step state tracking: 1, 2, 3, or 4
@@ -82,7 +83,7 @@ export function CheckoutPage({ cart = [], loadCart }) {
 
             // Step 1: Initiate Unified Checkout if not already created
             if (!pendingOrder) {
-                const checkoutResult = await checkoutApi.initiateCheckout({
+                const initiatePayload = {
                     shippingAddress: {
                         fullName: shippingAddress.fullName.trim(),
                         addressLine1: shippingAddress.addressLine1.trim(),
@@ -92,15 +93,30 @@ export function CheckoutPage({ cart = [], loadCart }) {
                         phone: shippingAddress.phone.replace(/\D/g, ''),
                     },
                     shippingMethod,
-                });
+                };
 
-                const createdOrder = checkoutResult.order || checkoutResult.data?.order || checkoutResult;
+                // Guest buyer: provide direct items payload required by backend
+                if (currentUser === null) {
+                    initiatePayload.items = (cart || []).map((item) => ({
+                        productId: item.productId || item.id,
+                        quantity: item.quantity,
+                    }));
+                }
+
+                const checkoutResult = await checkoutApi.initiateCheckout(initiatePayload);
+
+                const createdOrder = checkoutResult.order || checkoutResult.data?.order || checkoutResult.data || checkoutResult;
                 orderId = createdOrder.id;
                 currentGuestToken = checkoutResult.guestToken || checkoutResult.data?.guestToken || null;
 
                 setPendingOrder(createdOrder);
                 if (currentGuestToken) {
                     setGuestToken(currentGuestToken);
+                }
+
+                // If guest checkout successfully created Order, clear local guest cart
+                if (currentUser === null && orderId) {
+                    clearGuestCart();
                 }
             }
 

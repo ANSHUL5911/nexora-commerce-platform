@@ -4,6 +4,7 @@ import { Header } from '../../components/Header.jsx';
 import { productsApi } from '../../api/products.js';
 import { adaptProduct } from '../../api/adapters.js';
 import { cartApi } from '../../api/cart.js';
+import { addGuestCartItem } from '../../api/guestCart.js';
 import { formatMoney } from '../../utils/money.js';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -51,10 +52,14 @@ export function ProductDetailPage({ cart, loadCart, currentUser, onAuthChange })
     if (!product) return;
     try {
       setAdding(true);
-      await cartApi.addItem({
-        productId: product.id,
-        quantity,
-      });
+      if (currentUser === null) {
+        addGuestCartItem(product.id, quantity, availableQty, product);
+      } else {
+        await cartApi.addItem({
+          productId: product.id,
+          quantity,
+        });
+      }
       if (loadCart) {
         await loadCart();
       }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Header } from '../../components/Header.jsx';
 import { cartApi } from '../../api/cart.js';
+import { updateGuestCartItem, removeGuestCartItem } from '../../api/guestCart.js';
 import { formatMoney } from '../../utils/money.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
@@ -12,16 +13,22 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
   const [updatingId, setUpdatingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const handleQuantityChange = async (itemId, newQty) => {
+  const handleQuantityChange = async (item, newQty) => {
+    const itemId = item.id || item.cartItemId;
+    const productId = item.productId || item.id;
     try {
       setUpdatingId(itemId);
       setErrorMsg(null);
-      await cartApi.updateItem(itemId, { quantity: Number(newQty) });
+      if (currentUser === null) {
+        updateGuestCartItem(productId, Number(newQty), item.availableQuantity);
+      } else {
+        await cartApi.updateItem(itemId, { quantity: Number(newQty) });
+      }
       if (loadCart) {
         await loadCart();
       }
     } catch (err) {
-      setErrorMsg(err?.response?.data?.error?.message || err?.message || 'Failed to update item quantity');
+      setErrorMsg(err?.message || 'Failed to update item quantity');
       if (loadCart) {
         await loadCart();
       }
@@ -30,16 +37,22 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
     }
   };
 
-  const handleRemoveItem = async (itemId) => {
+  const handleRemoveItem = async (item) => {
+    const itemId = item.id || item.cartItemId;
+    const productId = item.productId || item.id;
     try {
       setUpdatingId(itemId);
       setErrorMsg(null);
-      await cartApi.removeItem(itemId);
+      if (currentUser === null) {
+        removeGuestCartItem(productId);
+      } else {
+        await cartApi.removeItem(itemId);
+      }
       if (loadCart) {
         await loadCart();
       }
     } catch (err) {
-      setErrorMsg(err?.response?.data?.error?.message || err?.message || 'Failed to remove item');
+      setErrorMsg(err?.message || 'Failed to remove item');
       if (loadCart) {
         await loadCart();
       }
@@ -106,9 +119,12 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
                             aria-label={`Quantity for ${item.name}`}
                             value={item.quantity}
                             disabled={updatingId === itemId}
-                            onChange={(e) => handleQuantityChange(itemId, e.target.value)}
+                            onChange={(e) => handleQuantityChange(item, e.target.value)}
                           >
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                            {Array.from(
+                              { length: item.availableQuantity !== undefined && item.availableQuantity !== null ? Math.min(10, Math.max(1, item.availableQuantity)) : 10 },
+                              (_, i) => i + 1
+                            ).map((num) => (
                               <option key={num} value={num}>{num}</option>
                             ))}
                           </select>
@@ -118,7 +134,7 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
                           type="button"
                           className="cart-item-remove-btn"
                           disabled={updatingId === itemId}
-                          onClick={() => handleRemoveItem(itemId)}
+                          onClick={() => handleRemoveItem(item)}
                         >
                           Remove
                         </button>

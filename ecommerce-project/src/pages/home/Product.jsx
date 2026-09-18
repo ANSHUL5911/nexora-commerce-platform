@@ -2,29 +2,44 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { formatMoney } from '../../utils/money.js';
 import { cartApi } from '../../api/cart.js';
+import { addGuestCartItem } from '../../api/guestCart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
 
-export function Product({ product, loadCart }) {
-  const [quantity, setQuantity] = useState(1);
+export function Product({ product, loadCart, currentUser }) {
+  const availableQty = product.available_quantity ?? product.availableQuantity;
+  const isAvailableDefined = availableQty !== undefined && availableQty !== null;
+  const maxSelectable = isAvailableDefined ? Math.min(10, Math.max(0, availableQty)) : 10;
+  const qtyOptions = maxSelectable > 0
+    ? Array.from({ length: maxSelectable }, (_, i) => i + 1)
+    : [0];
+
+  const [quantity, setQuantity] = useState(availableQty === 0 ? 0 : 1);
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const addToCart = async () => {
+    if (availableQty === 0) return;
     try {
       setLoading(true);
       setErrorMsg(null);
-      await cartApi.addItem({
-        productId: product.id,
-        quantity,
-      });
+
+      if (currentUser === null) {
+        addGuestCartItem(product.id, quantity, availableQty, product);
+      } else {
+        await cartApi.addItem({
+          productId: product.id,
+          quantity,
+        });
+      }
+
       if (loadCart) {
         await loadCart();
       }
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (err) {
-      setErrorMsg(err?.response?.data?.error?.message || err?.message || 'Failed to add item');
+      setErrorMsg(err?.message || 'Failed to add item');
       setTimeout(() => setErrorMsg(null), 3000);
     } finally {
       setLoading(false);
@@ -39,7 +54,6 @@ export function Product({ product, loadCart }) {
   const ratingStars = product.rating?.stars ?? 4.5;
   const ratingCount = product.rating?.count ?? 0;
   const pricePaise = product.pricePaise ?? product.price_paise ?? product.priceCents ?? 0;
-  const availableQty = product.available_quantity ?? product.availableQuantity;
   const category = product.category || (product.keywords?.[0] ? product.keywords[0].toUpperCase() : 'ESSENTIALS');
 
   return (
@@ -106,8 +120,9 @@ export function Product({ product, loadCart }) {
               data-testid="quantity-selector"
               value={quantity}
               onChange={selectQuantity}
+              disabled={loading || availableQty === 0}
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+              {qtyOptions.map((num) => (
                 <option key={num} value={num}>
                   {num}
                 </option>

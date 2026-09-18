@@ -297,4 +297,78 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
             );
         });
     });
+
+    it('submits items array during guest checkout (currentUser === null) and clears guest cart upon order creation', async () => {
+        const user = userEvent.setup();
+        localStorage.setItem('nexora_guest_cart', JSON.stringify([{ productId: 'prod-1', quantity: 1 }]));
+
+        checkoutApi.initiateCheckout.mockResolvedValueOnce({
+            order: {
+                id: 'ord-guest-test-111',
+                totalPaise: 450000,
+                reservationExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+            },
+            guestToken: 'raw_guest_token_111',
+        });
+
+        paymentsApi.createPaymentOrder.mockResolvedValueOnce({
+            keyId: 'rzp_test_123',
+            amount: 450000,
+            razorpayOrderId: 'order_rzp_guest_111',
+        });
+
+        paymentsApi.verifyPayment.mockResolvedValueOnce({
+            success: true,
+            orderId: 'ord-guest-test-111',
+        });
+
+        render(
+            <MemoryRouter>
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={null} />
+            </MemoryRouter>
+        );
+
+        // Fill Address
+        await user.type(screen.getByLabelText(/Full Name/i), 'Guest Buyer');
+        await user.type(screen.getByLabelText(/Street Address/i), '456 Guest Lane');
+        await user.type(screen.getByLabelText(/City/i), 'Mumbai');
+        await user.type(screen.getByLabelText(/State/i), 'Maharashtra');
+        await user.type(screen.getByLabelText(/PIN Code/i), '400001');
+        await user.type(screen.getByLabelText(/Phone Number/i), '9876543210');
+        await user.click(screen.getByRole('button', { name: /Continue to Shipping Method/i }));
+
+        // Shipping
+        await user.click(screen.getByRole('button', { name: /Continue to Order Review/i }));
+
+        // Review -> Payment
+        await user.click(screen.getByRole('button', { name: /Proceed to Payment/i }));
+
+        // Pay
+        const payBtn = screen.getByRole('button', { name: /Pay ₹4500\.00 via Razorpay/i });
+        await user.click(payBtn);
+
+        await waitFor(() => {
+            expect(checkoutApi.initiateCheckout).toHaveBeenCalledWith({
+                shippingAddress: {
+                    fullName: 'Guest Buyer',
+                    addressLine1: '456 Guest Lane',
+                    city: 'Mumbai',
+                    state: 'Maharashtra',
+                    pincode: '400001',
+                    phone: '9876543210',
+                },
+                shippingMethod: 'STANDARD',
+                items: [
+                    { productId: 'prod-1', quantity: 1 },
+                ],
+            });
+
+            // Local guest cart must be cleared after successful order creation
+            expect(localStorage.getItem('nexora_guest_cart')).toBeNull();
+            // Guest token must remain memory-only
+            expect(localStorage.getItem('guestToken')).toBeNull();
+            expect(sessionStorage.getItem('guestToken')).toBeNull();
+        });
+    });
 });
+

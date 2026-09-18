@@ -97,10 +97,35 @@ export function normalizeApiError(error) {
   const status = response?.status || (error?.code === 'ECONNABORTED' ? 504 : 500);
   const data = response?.data;
 
-  let code = data?.errorCode || data?.code || 'UNKNOWN_ERROR';
-  let message = data?.errorMessage || data?.message || data?.error;
-  const requestId = data?.requestId || response?.headers?.['x-request-id'] || null;
-  const details = Array.isArray(data?.details) ? data.details : [];
+  const errObj =
+    typeof data?.error === 'object' && data.error !== null
+      ? data.error
+      : null;
+
+  let code =
+    errObj?.code ||
+    data?.errorCode ||
+    data?.code ||
+    'UNKNOWN_ERROR';
+
+  let message =
+    errObj?.message ||
+    data?.errorMessage ||
+    data?.message ||
+    (typeof data?.error === 'string' ? data.error : null);
+
+  const requestId =
+    errObj?.requestId ||
+    data?.requestId ||
+    response?.headers?.['x-request-id'] ||
+    null;
+
+  const details =
+    Array.isArray(errObj?.details)
+      ? errObj.details
+      : Array.isArray(data?.details)
+        ? data.details
+        : [];
 
   if (!message) {
     if (status === 401) {
@@ -125,7 +150,7 @@ export function normalizeApiError(error) {
       message = 'Unable to connect to Nexora service. Please try again later.';
       code = code === 'UNKNOWN_ERROR' ? 'SERVER_ERROR' : code;
     } else {
-      message = error?.message || 'An unexpected error occurred.';
+      message = error?.message || 'Request failed';
     }
   }
 

@@ -27,6 +27,7 @@ describe('Product component', () => {
   let loadCart;
 
   beforeEach(() => {
+    vi.clearAllMocks();
     product = {
       id: 'e43638ce-6aa0-4b85-b27f-e1d07eb678c6',
       image: 'images/products/athletic-cotton-socks-6-pairs.jpg',
@@ -164,4 +165,133 @@ describe('Product component', () => {
     // Verify Add to Cart does NOT navigate to PDP
     expect(screen.queryByTestId('pdp-target')).not.toBeInTheDocument();
   });
-});
+
+  describe('Inventory-aware quantity selection and error rendering', () => {
+    it('limits selectable quantities to 1 when available_quantity is 1', () => {
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 1 }} loadCart={loadCart} />
+      );
+
+      const options = screen.getAllByRole('option');
+      expect(options.map((o) => o.value)).toEqual(['1']);
+    });
+
+    it('limits selectable quantities to 1, 2, 3 when available_quantity is 3', () => {
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 3 }} loadCart={loadCart} />
+      );
+
+      const options = screen.getAllByRole('option');
+      expect(options.map((o) => o.value)).toEqual(['1', '2', '3']);
+    });
+
+    it('allows quantities 1 to 10 when available_quantity is 10', () => {
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 10 }} loadCart={loadCart} />
+      );
+
+      const options = screen.getAllByRole('option');
+      expect(options.map((o) => o.value)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+    });
+
+    it('caps selectable quantity at 10 when available_quantity exceeds 10', () => {
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 25 }} loadCart={loadCart} />
+      );
+
+      const options = screen.getAllByRole('option');
+      expect(options.map((o) => o.value)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+    });
+
+    it('preserves quantity as a number and sends the selected numeric quantity on Add to Cart', async () => {
+      const user = userEvent.setup();
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 5 }} loadCart={loadCart} />
+      );
+
+      const selector = screen.getByTestId('quantity-selector');
+      await user.selectOptions(selector, '3');
+      expect(selector).toHaveValue('3');
+
+      const addButton = screen.getByTestId('add-to-cart-button');
+      await user.click(addButton);
+
+      expect(cartApi.addItem).toHaveBeenCalledWith({
+        productId: product.id,
+        quantity: 3,
+      });
+      const callArg = cartApi.addItem.mock.calls[0][0];
+      expect(typeof callArg.quantity).toBe('number');
+    });
+
+    it('does not submit cart request when available_quantity is 0 (out of stock)', async () => {
+      const user = userEvent.setup();
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 0 }} loadCart={loadCart} />
+      );
+
+      const addButton = screen.getByTestId('add-to-cart-button');
+      expect(addButton).toBeDisabled();
+      expect(addButton).toHaveTextContent('Out of Stock');
+
+      const selector = screen.getByTestId('quantity-selector');
+      expect(selector).toBeDisabled();
+
+      await user.click(addButton);
+      expect(cartApi.addItem).not.toHaveBeenCalled();
+    });
+
+    it('preserves existing default behavior without inventing stock when availability is missing/undefined', () => {
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: undefined }} loadCart={loadCart} />
+      );
+
+      const options = screen.getAllByRole('option');
+      expect(options.map((o) => o.value)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']);
+    });
+
+    it('displays the clean backend error message on INSUFFICIENT_STOCK failure and never renders [object Object]', async () => {
+      const user = userEvent.setup();
+      const stockError = new Error('Requested quantity exceeds available stock.');
+      cartApi.addItem.mockRejectedValueOnce(stockError);
+
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 5 }} loadCart={loadCart} />
+      );
+
+      const addButton = screen.getByTestId('add-to-cart-button');
+      await user.click(addButton);
+
+      const renderedError = await screen.findByRole('alert');
+      expect(renderedError).toBeInTheDocument();
+      expect(renderedError).toHaveTextContent('Requested quantity exceeds available stock.');
+      expect(renderedError.textContent).not.toContain('[object Object]');
+    });
+
+    it('adds product to local guest cart without calling cartApi.addItem when currentUser is null', async () => {
+      const user = userEvent.setup();
+      renderWithRouter(
+        <Product product={{ ...product, available_quantity: 5 }} loadCart={loadCart} currentUser={null} />
+      );
+
+      const selector = screen.getByTestId('quantity-selector');
+      await user.selectOptions(selector, '3');
+
+      const addButton = screen.getByTestId('add-to-cart-button');
+      await user.click(addButton);
+
+      // Must NOT call authenticated server cart API
+      expect(cartApi.addItem).not.toHaveBeenCalled();
+      // Must call loadCart() to refresh application state
+      expect(loadCart).toHaveBeenCalled();
+      // Must show success notice
+      expect(await screen.findByText('✓ Added to Cart')).toBeInTheDocument();
+
+      // Must be present in localStorage nexora_guest_cart
+      const stored = JSON.parse(localStorage.getItem('nexora_guest_cart'));
+      expect(stored).toEqual([{ productId: product.id, quantity: 3 }]);
+    });
+  });
+});
+
+

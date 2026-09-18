@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router';
 import { Header } from '../../components/Header.jsx';
 import { productsApi } from '../../api/products.js';
 import { adaptProduct } from '../../api/adapters.js';
+import { bulkCacheProductMetadata } from '../../api/guestCart.js';
 import { Skeleton } from '../../components/ui/Skeleton.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { ProductsGrid } from './ProductsGrid.jsx';
@@ -41,6 +42,7 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
       // Stale-response guard: ignore response if a newer request was dispatched
       if (currentRequestId !== requestIdRef.current) return;
       const rawList = Array.isArray(data) ? data : (data?.products || data?.data?.products || []);
+      bulkCacheProductMetadata(rawList);
       setProducts(rawList.map(adaptProduct));
     } catch (err) {
       if (currentRequestId !== requestIdRef.current) return;
@@ -147,7 +149,7 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
 
         {/* Products Grid */}
         {!loading && !error && products.length > 0 && (
-          <ProductsGrid products={products} loadCart={loadCart} />
+          <ProductsGrid products={products} loadCart={loadCart} currentUser={currentUser} />
         )}
       </main>
     </>
