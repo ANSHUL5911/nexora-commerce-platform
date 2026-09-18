@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-14T19:18:06.124Z",
+  "timestamp": "2026-09-16T07:01:10.767Z",
   "environment": {
     "nodeVersion": "v24.13.0",
     "platform": "win32",
@@ -13,117 +13,117 @@
     }
   },
   "memory": {
-    "initialRssMb": 108.56,
-    "initialHeapMb": 31.44,
-    "finalRssMb": 134.58,
-    "finalHeapMb": 40.53
+    "initialRssMb": 110.84,
+    "initialHeapMb": 35.33,
+    "finalRssMb": 137.45,
+    "finalHeapMb": 45.9
   },
   "explainResults": [
     {
       "queryName": "Product Catalog Default List (Sort created_at DESC, id DESC LIMIT 10)",
       "sql": "SELECT id, name, description, price_paise, stock_quantity, reserved_quantity, category, image_url, is_deleted, created_at, updated_at FROM products WHERE is_deleted = false ORDER BY created_at DESC, id DESC LIMIT 10;",
-      "executionTimeMs": 0.049,
-      "planningTimeMs": 0.191,
+      "executionTimeMs": 0.095,
+      "planningTimeMs": 0.309,
       "scanTypes": [
         "Seq Scan"
       ],
-      "bufferHits": 54,
+      "bufferHits": 51,
       "bufferReads": 0,
       "rawPlan": [
-        "Limit  (cost=22.96..22.98 rows=10 width=169) (actual time=0.035..0.036 rows=10 loops=1)",
+        "Limit  (cost=11.25..11.27 rows=10 width=1331) (actual time=0.067..0.068 rows=10 loops=1)",
         "  Buffers: shared hit=2",
-        "  ->  Sort  (cost=22.96..23.98 rows=410 width=169) (actual time=0.033..0.033 rows=10 loops=1)",
+        "  ->  Sort  (cost=11.25..11.32 rows=30 width=1331) (actual time=0.062..0.063 rows=10 loops=1)",
         "        Sort Key: created_at DESC, id DESC",
         "        Sort Method: top-N heapsort  Memory: 30kB",
         "        Buffers: shared hit=2",
-        "        ->  Seq Scan on products  (cost=0.00..14.10 rows=410 width=169) (actual time=0.010..0.017 rows=50 loops=1)",
+        "        ->  Seq Scan on products  (cost=0.00..10.60 rows=30 width=1331) (actual time=0.022..0.034 rows=50 loops=1)",
         "              Filter: (NOT is_deleted)",
         "              Buffers: shared hit=2",
         "Planning:",
-        "  Buffers: shared hit=48",
-        "Planning Time: 0.191 ms",
-        "Execution Time: 0.049 ms"
+        "  Buffers: shared hit=45",
+        "Planning Time: 0.309 ms",
+        "Execution Time: 0.095 ms"
       ]
     },
     {
       "queryName": "Product Lookup by ID with Soft-Delete Filter",
       "sql": "SELECT id, name, price_paise, stock_quantity, reserved_quantity, is_deleted FROM products WHERE id = '00000000-0000-4000-8000-000100000001' AND is_deleted = false;",
-      "executionTimeMs": 0.018,
-      "planningTimeMs": 0.062,
+      "executionTimeMs": 0.034,
+      "planningTimeMs": 0.149,
       "scanTypes": [
         "Index Scan"
       ],
       "bufferHits": 2,
       "bufferReads": 0,
       "rawPlan": [
-        "Index Scan using products_pkey on products  (cost=0.15..8.17 rows=1 width=60) (actual time=0.005..0.006 rows=1 loops=1)",
+        "Index Scan using products_pkey on products  (cost=0.14..8.16 rows=1 width=549) (actual time=0.010..0.011 rows=1 loops=1)",
         "  Index Cond: (id = '00000000-0000-4000-8000-000100000001'::uuid)",
         "  Filter: (NOT is_deleted)",
         "  Buffers: shared hit=2",
-        "Planning Time: 0.062 ms",
-        "Execution Time: 0.018 ms"
+        "Planning Time: 0.149 ms",
+        "Execution Time: 0.034 ms"
       ]
     },
     {
       "queryName": "Deterministic Row Lock on Products (FOR UPDATE)",
       "sql": "SELECT id, stock_quantity, reserved_quantity FROM products WHERE id = '00000000-0000-4000-8000-000100000001' FOR UPDATE;",
-      "executionTimeMs": 0.038,
-      "planningTimeMs": 0.079,
+      "executionTimeMs": 0.028,
+      "planningTimeMs": 0.089,
       "scanTypes": [
         "Index Scan"
       ],
       "bufferHits": 8,
       "bufferReads": 0,
       "rawPlan": [
-        "LockRows  (cost=0.15..8.18 rows=1 width=30) (actual time=0.020..0.021 rows=1 loops=1)",
+        "LockRows  (cost=0.14..8.17 rows=1 width=30) (actual time=0.014..0.015 rows=1 loops=1)",
         "  Buffers: shared hit=3",
-        "  ->  Index Scan using products_pkey on products  (cost=0.15..8.17 rows=1 width=30) (actual time=0.011..0.012 rows=1 loops=1)",
+        "  ->  Index Scan using products_pkey on products  (cost=0.14..8.16 rows=1 width=30) (actual time=0.008..0.009 rows=1 loops=1)",
         "        Index Cond: (id = '00000000-0000-4000-8000-000100000001'::uuid)",
         "        Buffers: shared hit=2",
         "Planning:",
         "  Buffers: shared hit=3",
-        "Planning Time: 0.079 ms",
-        "Execution Time: 0.038 ms"
+        "Planning Time: 0.089 ms",
+        "Execution Time: 0.028 ms"
       ]
     },
     {
       "queryName": "Webhook Event Idempotency Lookup",
       "sql": "SELECT id, event_id, processing_status FROM payment_events WHERE event_id = 'evt_sample_explain_lookup';",
-      "executionTimeMs": 0.014,
-      "planningTimeMs": 2.802,
+      "executionTimeMs": 0.012,
+      "planningTimeMs": 1.797,
       "scanTypes": [
         "Index Scan"
       ],
-      "bufferHits": 28,
+      "bufferHits": 25,
       "bufferReads": 3,
       "rawPlan": [
-        "Index Scan using payment_events_event_id_key on payment_events  (cost=0.15..8.17 rows=1 width=48) (actual time=0.003..0.003 rows=0 loops=1)",
+        "Index Scan using payment_events_event_id_key on payment_events  (cost=0.14..8.16 rows=1 width=650) (actual time=0.002..0.002 rows=0 loops=1)",
         "  Index Cond: ((event_id)::text = 'evt_sample_explain_lookup'::text)",
         "  Buffers: shared hit=2",
         "Planning:",
-        "  Buffers: shared hit=26 read=3",
-        "Planning Time: 2.802 ms",
-        "Execution Time: 0.014 ms"
+        "  Buffers: shared hit=23 read=3",
+        "Planning Time: 1.797 ms",
+        "Execution Time: 0.012 ms"
       ]
     },
     {
       "queryName": "Session SID Authentication Lookup",
       "sql": "SELECT sid, user_id, expires_at FROM sessions WHERE sid = 'sample_sid_for_explain_plan' AND expires_at > CURRENT_TIMESTAMP;",
       "executionTimeMs": 0.012,
-      "planningTimeMs": 1.921,
+      "planningTimeMs": 1.685,
       "scanTypes": [
         "Index Scan"
       ],
-      "bufferHits": 31,
+      "bufferHits": 25,
       "bufferReads": 3,
       "rawPlan": [
-        "Index Scan using sessions_pkey on sessions  (cost=0.15..8.17 rows=1 width=89) (actual time=0.002..0.003 rows=0 loops=1)",
+        "Index Scan using sessions_pkey on sessions  (cost=0.14..8.17 rows=1 width=540) (actual time=0.002..0.003 rows=0 loops=1)",
         "  Index Cond: ((sid)::text = 'sample_sid_for_explain_plan'::text)",
         "  Filter: (expires_at > CURRENT_TIMESTAMP)",
         "  Buffers: shared hit=2",
         "Planning:",
-        "  Buffers: shared hit=29 read=3",
-        "Planning Time: 1.921 ms",
+        "  Buffers: shared hit=23 read=3",
+        "Planning Time: 1.685 ms",
         "Execution Time: 0.012 ms"
       ]
     }
@@ -137,17 +137,17 @@
         "passed": true,
         "stats": {
           "count": 30,
-          "min": 3.79,
-          "max": 16.78,
-          "mean": 6.69,
-          "p50": 5.25,
-          "p95": 14.88,
-          "p99": 16.43,
-          "stdDev": 3.5
+          "min": 3.89,
+          "max": 17.13,
+          "mean": 7.55,
+          "p50": 7.37,
+          "p95": 12.2,
+          "p99": 16.18,
+          "stdDev": 2.72
         },
-        "throughputReqSec": 149.11,
+        "throughputReqSec": 132.07,
         "avgQueryCount": 2,
-        "avgQueryDurationMs": 2.02,
+        "avgQueryDurationMs": 1.8,
         "errorCount": 0,
         "errors": []
       },
@@ -156,17 +156,17 @@
         "target": "diagnostic / characterization",
         "stats": {
           "count": 30,
-          "min": 3.43,
-          "max": 6.32,
-          "mean": 4.24,
-          "p50": 3.81,
-          "p95": 5.94,
-          "p99": 6.23,
-          "stdDev": 0.86
+          "min": 3.87,
+          "max": 6.24,
+          "mean": 4.54,
+          "p50": 4.18,
+          "p95": 5.81,
+          "p99": 6.13,
+          "stdDev": 0.7
         },
-        "throughputReqSec": 235.27,
+        "throughputReqSec": 219.74,
         "avgQueryCount": 1,
-        "avgQueryDurationMs": 0.51,
+        "avgQueryDurationMs": 0.56,
         "errorCount": 0,
         "errors": []
       },
@@ -175,17 +175,17 @@
         "target": "diagnostic / characterization",
         "stats": {
           "count": 25,
-          "min": 4.93,
-          "max": 9.21,
-          "mean": 6.73,
-          "p50": 6.39,
-          "p95": 8.54,
-          "p99": 9.07,
-          "stdDev": 1.15
+          "min": 5.5,
+          "max": 8.22,
+          "mean": 6.68,
+          "p50": 6.79,
+          "p95": 7.69,
+          "p99": 8.1,
+          "stdDev": 0.76
         },
-        "throughputReqSec": 148.38,
+        "throughputReqSec": 149.43,
         "avgQueryCount": 2,
-        "avgQueryDurationMs": 1.77,
+        "avgQueryDurationMs": 1.7,
         "errorCount": 0,
         "errors": []
       },
@@ -195,17 +195,17 @@
         "passed": true,
         "stats": {
           "count": 20,
-          "min": 19.66,
-          "max": 49.24,
-          "mean": 25.46,
-          "p50": 23.05,
-          "p95": 32.89,
-          "p99": 45.97,
-          "stdDev": 6.48
+          "min": 20.66,
+          "max": 39.2,
+          "mean": 26.43,
+          "p50": 25,
+          "p95": 32.61,
+          "p99": 37.88,
+          "stdDev": 4.39
         },
-        "throughputReqSec": 2,
+        "throughputReqSec": 1.97,
         "avgQueryCount": 23,
-        "avgQueryDurationMs": 13.29,
+        "avgQueryDurationMs": 13.46,
         "errorCount": 0,
         "errors": []
       },
@@ -215,17 +215,17 @@
         "gatewayMode": "mocked (0ms gateway overhead, isolated Nexora app+DB latency)",
         "stats": {
           "count": 20,
-          "min": 16.54,
-          "max": 26.6,
-          "mean": 20.02,
-          "p50": 19.53,
-          "p95": 23.9,
-          "p99": 26.06,
-          "stdDev": 2.17
+          "min": 17.98,
+          "max": 23.63,
+          "mean": 20.63,
+          "p50": 20.32,
+          "p95": 23.31,
+          "p99": 23.57,
+          "stdDev": 1.47
         },
-        "throughputReqSec": 2.07,
+        "throughputReqSec": 1.98,
         "avgQueryCount": 16,
-        "avgQueryDurationMs": 10.43,
+        "avgQueryDurationMs": 10.56,
         "errorCount": 0,
         "errors": []
       },
@@ -235,17 +235,17 @@
         "gatewayMode": "mocked signature & fetch (isolating transactional settlement)",
         "stats": {
           "count": 20,
-          "min": 20.66,
-          "max": 37.82,
-          "mean": 25.7,
-          "p50": 24.94,
-          "p95": 28.67,
-          "p99": 35.99,
-          "stdDev": 3.43
+          "min": 21.69,
+          "max": 41.16,
+          "mean": 25.83,
+          "p50": 23.82,
+          "p95": 39.04,
+          "p99": 40.74,
+          "stdDev": 5.18
         },
-        "throughputReqSec": 2.06,
+        "throughputReqSec": 1.98,
         "avgQueryCount": 21,
-        "avgQueryDurationMs": 13.94,
+        "avgQueryDurationMs": 13.77,
         "errorCount": 0,
         "errors": []
       },
@@ -255,46 +255,46 @@
         "passed": true,
         "stats": {
           "count": 25,
-          "min": 19.09,
-          "max": 90.62,
-          "mean": 25.5,
-          "p50": 22.41,
-          "p95": 29.86,
-          "p99": 76.08,
-          "stdDev": 13.63
+          "min": 20.44,
+          "max": 31.85,
+          "mean": 23.48,
+          "p50": 23,
+          "p95": 27.38,
+          "p99": 30.79,
+          "stdDev": 2.57
         },
-        "throughputReqSec": 21.64,
+        "throughputReqSec": 23.9,
         "avgQueryCount": 22,
-        "avgQueryDurationMs": 13.89,
+        "avgQueryDurationMs": 12.89,
         "subScenarios": {
           "firstCapture": {
             "count": 25,
-            "min": 19.09,
-            "max": 90.62,
-            "mean": 25.5,
-            "p50": 22.41,
-            "p95": 29.86,
-            "p99": 76.08,
-            "stdDev": 13.63
+            "min": 20.44,
+            "max": 31.85,
+            "mean": 23.48,
+            "p50": 23,
+            "p95": 27.38,
+            "p99": 30.79,
+            "stdDev": 2.57
           },
           "duplicateEvent": {
             "count": 25,
-            "min": 5.4,
-            "max": 74.04,
-            "mean": 10.64,
-            "p50": 8.04,
-            "p95": 11.4,
-            "p99": 59.02,
-            "stdDev": 13.05
+            "min": 6.46,
+            "max": 11.66,
+            "mean": 8.54,
+            "p50": 8.09,
+            "p95": 11.11,
+            "p99": 11.53,
+            "stdDev": 1.58
           },
           "invalidSignature": {
             "count": 1,
-            "min": 24.26,
-            "max": 24.26,
-            "mean": 24.26,
-            "p50": 24.26,
-            "p95": 24.26,
-            "p99": 24.26,
+            "min": 7.85,
+            "max": 7.85,
+            "mean": 7.85,
+            "p50": 7.85,
+            "p95": 7.85,
+            "p99": 7.85,
             "stdDev": 0
           }
         },
@@ -312,8 +312,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 84.27,
-            "avgPerRequestMs": 8.43,
+            "totalDurationMs": 137.4,
+            "avgPerRequestMs": 13.74,
             "correctnessPassed": true
           },
           {
@@ -324,8 +324,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 53.36,
-            "avgPerRequestMs": 2.13,
+            "totalDurationMs": 114.09,
+            "avgPerRequestMs": 4.56,
             "correctnessPassed": true
           },
           {
@@ -336,8 +336,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 118.78,
-            "avgPerRequestMs": 2.38,
+            "totalDurationMs": 82.16,
+            "avgPerRequestMs": 1.64,
             "correctnessPassed": true
           }
         ],
@@ -353,8 +353,8 @@
             "finalOrderStatus": "PAID",
             "finalStock": 8,
             "finalReserved": 0,
-            "totalDurationMs": 110.6,
-            "avgPerCallMs": 11.06,
+            "totalDurationMs": 81.76,
+            "avgPerCallMs": 8.18,
             "correctnessPassed": true
           },
           {
@@ -364,8 +364,8 @@
             "finalOrderStatus": "PAID",
             "finalStock": 8,
             "finalReserved": 0,
-            "totalDurationMs": 72.59,
-            "avgPerCallMs": 2.9,
+            "totalDurationMs": 70.74,
+            "avgPerCallMs": 2.83,
             "correctnessPassed": true
           }
         ],
@@ -378,8 +378,8 @@
         "distinctOrderIdsInResponses": 1,
         "ordersInDatabase": 1,
         "reservationsInDatabase": 1,
-        "totalDurationMs": 101.03,
-        "avgPerRequestMs": 10.1,
+        "totalDurationMs": 93.14,
+        "avgPerRequestMs": 9.31,
         "correctnessPassed": true
       },
       "bench11": {
@@ -387,23 +387,23 @@
         "target": "diagnostic / characterization",
         "checkoutStats": {
           "count": 20,
-          "min": 17.43,
-          "max": 25.47,
-          "mean": 19.18,
-          "p50": 18.46,
-          "p95": 24.05,
-          "p99": 25.19,
-          "stdDev": 2.07
+          "min": 16.79,
+          "max": 21.63,
+          "mean": 19.4,
+          "p50": 18.94,
+          "p95": 21.56,
+          "p99": 21.62,
+          "stdDev": 1.33
         },
         "retrievalStats": {
           "count": 20,
-          "min": 4.72,
-          "max": 8.11,
-          "mean": 5.74,
-          "p50": 5.22,
-          "p95": 7.51,
-          "p99": 7.99,
-          "stdDev": 0.99
+          "min": 4.95,
+          "max": 8.26,
+          "mean": 6.03,
+          "p50": 5.63,
+          "p95": 8.25,
+          "p99": 8.25,
+          "stdDev": 1.1
         },
         "errorCount": 0,
         "errors": []
@@ -416,61 +416,61 @@
             "url": "/api/admin/products?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 5.86,
-              "max": 10.21,
-              "mean": 7.49,
-              "p50": 7.41,
-              "p95": 9.66,
-              "p99": 10.1,
-              "stdDev": 1.21
+              "min": 6.11,
+              "max": 8.52,
+              "mean": 7.35,
+              "p50": 7.39,
+              "p95": 8.49,
+              "p99": 8.52,
+              "stdDev": 0.81
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.17
+            "avgQueryDurationMs": 1.99
           },
           "adminOrders": {
             "url": "/api/admin/orders?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 7.97,
-              "max": 17.25,
-              "mean": 11.2,
-              "p50": 10.72,
-              "p95": 15.11,
-              "p99": 16.82,
-              "stdDev": 2.32
+              "min": 8.6,
+              "max": 11.73,
+              "mean": 9.98,
+              "p50": 9.89,
+              "p95": 11.21,
+              "p99": 11.62,
+              "stdDev": 0.82
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 4.36
+            "avgQueryDurationMs": 4.18
           },
           "adminInventory": {
             "url": "/api/admin/inventory?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 5.61,
-              "max": 8.86,
-              "mean": 7.3,
-              "p50": 7.24,
-              "p95": 8.74,
-              "p99": 8.84,
-              "stdDev": 1.02
+              "min": 5.87,
+              "max": 11.03,
+              "mean": 7.52,
+              "p50": 7.28,
+              "p95": 9.29,
+              "p99": 10.68,
+              "stdDev": 1.11
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.14
+            "avgQueryDurationMs": 2.07
           },
           "adminAuditLogs": {
             "url": "/api/admin/audit-logs?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 6.21,
-              "max": 9.51,
-              "mean": 7.94,
-              "p50": 8.39,
-              "p95": 8.99,
-              "p99": 9.4,
-              "stdDev": 0.93
+              "min": 6.34,
+              "max": 9.43,
+              "mean": 7.93,
+              "p50": 7.76,
+              "p95": 9.03,
+              "p99": 9.35,
+              "stdDev": 0.81
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.33
+            "avgQueryDurationMs": 2.59
           }
         },
         "errorCount": 0,
@@ -485,15 +485,15 @@
         "passed": true,
         "stats": {
           "count": 30,
-          "min": 4.24,
-          "max": 9.37,
-          "mean": 5.92,
-          "p50": 5.6,
-          "p95": 8.27,
-          "p99": 9.12,
-          "stdDev": 1.3
+          "min": 4.56,
+          "max": 12.89,
+          "mean": 6.38,
+          "p50": 6.08,
+          "p95": 9.3,
+          "p99": 12.06,
+          "stdDev": 1.66
         },
-        "throughputReqSec": 168.62,
+        "throughputReqSec": 156.56,
         "avgQueryCount": 2,
         "avgQueryDurationMs": 1.46,
         "errorCount": 0,
@@ -504,17 +504,17 @@
         "target": "diagnostic / characterization",
         "stats": {
           "count": 30,
-          "min": 3.88,
-          "max": 7.16,
-          "mean": 4.96,
-          "p50": 4.61,
-          "p95": 6.76,
-          "p99": 7.11,
-          "stdDev": 0.92
+          "min": 4.04,
+          "max": 6.5,
+          "mean": 5.26,
+          "p50": 5.28,
+          "p95": 6.25,
+          "p99": 6.44,
+          "stdDev": 0.68
         },
-        "throughputReqSec": 201,
+        "throughputReqSec": 189.68,
         "avgQueryCount": 1,
-        "avgQueryDurationMs": 0.62,
+        "avgQueryDurationMs": 0.64,
         "errorCount": 0,
         "errors": []
       },
@@ -523,17 +523,17 @@
         "target": "diagnostic / characterization",
         "stats": {
           "count": 25,
-          "min": 5.9,
-          "max": 13.28,
-          "mean": 7.94,
-          "p50": 8.11,
-          "p95": 10.14,
-          "p99": 12.59,
-          "stdDev": 1.54
+          "min": 6.22,
+          "max": 11.63,
+          "mean": 8.06,
+          "p50": 7.79,
+          "p95": 9.67,
+          "p99": 11.17,
+          "stdDev": 1.22
         },
-        "throughputReqSec": 125.69,
+        "throughputReqSec": 123.9,
         "avgQueryCount": 2,
-        "avgQueryDurationMs": 2.02,
+        "avgQueryDurationMs": 2.25,
         "errorCount": 0,
         "errors": []
       },
@@ -543,17 +543,17 @@
         "passed": true,
         "stats": {
           "count": 20,
-          "min": 20.82,
-          "max": 33.76,
-          "mean": 26.54,
-          "p50": 26.07,
-          "p95": 31.64,
-          "p99": 33.34,
-          "stdDev": 3.08
+          "min": 24.24,
+          "max": 31.29,
+          "mean": 27.53,
+          "p50": 27.23,
+          "p95": 30.75,
+          "p99": 31.18,
+          "stdDev": 1.94
         },
-        "throughputReqSec": 2.05,
+        "throughputReqSec": 1.92,
         "avgQueryCount": 23,
-        "avgQueryDurationMs": 14.36,
+        "avgQueryDurationMs": 14.9,
         "errorCount": 0,
         "errors": []
       },
@@ -563,17 +563,17 @@
         "gatewayMode": "mocked (0ms gateway overhead, isolated Nexora app+DB latency)",
         "stats": {
           "count": 20,
-          "min": 17.5,
-          "max": 180.68,
-          "mean": 42.17,
-          "p50": 19.8,
-          "p95": 147.11,
-          "p99": 173.97,
-          "stdDev": 47.45
+          "min": 14.39,
+          "max": 24.67,
+          "mean": 19.25,
+          "p50": 19.16,
+          "p95": 22.48,
+          "p99": 24.23,
+          "stdDev": 2.22
         },
-        "throughputReqSec": 1.9,
+        "throughputReqSec": 2.01,
         "avgQueryCount": 16,
-        "avgQueryDurationMs": 32.82,
+        "avgQueryDurationMs": 9.96,
         "errorCount": 0,
         "errors": []
       },
@@ -583,17 +583,17 @@
         "gatewayMode": "mocked signature & fetch (isolating transactional settlement)",
         "stats": {
           "count": 20,
-          "min": 21.22,
-          "max": 74.26,
-          "mean": 28.81,
-          "p50": 25.51,
-          "p95": 56.54,
-          "p99": 70.71,
-          "stdDev": 12.57
+          "min": 20.84,
+          "max": 28.53,
+          "mean": 23.87,
+          "p50": 23.45,
+          "p95": 28.29,
+          "p99": 28.48,
+          "stdDev": 2.22
         },
-        "throughputReqSec": 1.99,
+        "throughputReqSec": 1.96,
         "avgQueryCount": 21,
-        "avgQueryDurationMs": 17.5,
+        "avgQueryDurationMs": 12.78,
         "errorCount": 0,
         "errors": []
       },
@@ -603,46 +603,46 @@
         "passed": true,
         "stats": {
           "count": 25,
-          "min": 18.72,
-          "max": 28.36,
-          "mean": 21.87,
-          "p50": 21.17,
-          "p95": 26.93,
-          "p99": 28.08,
-          "stdDev": 2.54
+          "min": 19.99,
+          "max": 25.51,
+          "mean": 22.52,
+          "p50": 22.35,
+          "p95": 24.93,
+          "p99": 25.4,
+          "stdDev": 1.52
         },
-        "throughputReqSec": 26.31,
+        "throughputReqSec": 25.05,
         "avgQueryCount": 22,
-        "avgQueryDurationMs": 12.34,
+        "avgQueryDurationMs": 12.79,
         "subScenarios": {
           "firstCapture": {
             "count": 25,
-            "min": 18.72,
-            "max": 28.36,
-            "mean": 21.87,
-            "p50": 21.17,
-            "p95": 26.93,
-            "p99": 28.08,
-            "stdDev": 2.54
+            "min": 19.99,
+            "max": 25.51,
+            "mean": 22.52,
+            "p50": 22.35,
+            "p95": 24.93,
+            "p99": 25.4,
+            "stdDev": 1.52
           },
           "duplicateEvent": {
             "count": 25,
-            "min": 5.66,
-            "max": 9.46,
-            "mean": 7.29,
-            "p50": 7.28,
-            "p95": 9.12,
-            "p99": 9.41,
-            "stdDev": 1.02
+            "min": 5.77,
+            "max": 11.21,
+            "mean": 7.97,
+            "p50": 8.14,
+            "p95": 10.71,
+            "p99": 11.12,
+            "stdDev": 1.65
           },
           "invalidSignature": {
             "count": 1,
-            "min": 4.12,
-            "max": 4.12,
-            "mean": 4.12,
-            "p50": 4.12,
-            "p95": 4.12,
-            "p99": 4.12,
+            "min": 5.41,
+            "max": 5.41,
+            "mean": 5.41,
+            "p50": 5.41,
+            "p95": 5.41,
+            "p99": 5.41,
             "stdDev": 0
           }
         },
@@ -660,8 +660,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 80.8,
-            "avgPerRequestMs": 8.08,
+            "totalDurationMs": 70.94,
+            "avgPerRequestMs": 7.09,
             "correctnessPassed": true
           },
           {
@@ -672,8 +672,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 68.22,
-            "avgPerRequestMs": 2.73,
+            "totalDurationMs": 55.4,
+            "avgPerRequestMs": 2.22,
             "correctnessPassed": true
           },
           {
@@ -684,8 +684,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 104.02,
-            "avgPerRequestMs": 2.08,
+            "totalDurationMs": 114.79,
+            "avgPerRequestMs": 2.3,
             "correctnessPassed": true
           }
         ],
@@ -701,8 +701,8 @@
             "finalOrderStatus": "PAID",
             "finalStock": 8,
             "finalReserved": 0,
-            "totalDurationMs": 92.03,
-            "avgPerCallMs": 9.2,
+            "totalDurationMs": 85.31,
+            "avgPerCallMs": 8.53,
             "correctnessPassed": true
           },
           {
@@ -712,8 +712,8 @@
             "finalOrderStatus": "PAID",
             "finalStock": 8,
             "finalReserved": 0,
-            "totalDurationMs": 78.02,
-            "avgPerCallMs": 3.12,
+            "totalDurationMs": 82.07,
+            "avgPerCallMs": 3.28,
             "correctnessPassed": true
           }
         ],
@@ -726,8 +726,8 @@
         "distinctOrderIdsInResponses": 1,
         "ordersInDatabase": 1,
         "reservationsInDatabase": 1,
-        "totalDurationMs": 131.56,
-        "avgPerRequestMs": 13.16,
+        "totalDurationMs": 93.81,
+        "avgPerRequestMs": 9.38,
         "correctnessPassed": true
       },
       "bench11": {
@@ -735,23 +735,23 @@
         "target": "diagnostic / characterization",
         "checkoutStats": {
           "count": 20,
-          "min": 18.59,
+          "min": 17.56,
           "max": 25.61,
-          "mean": 21.83,
-          "p50": 21.69,
-          "p95": 25.1,
-          "p99": 25.5,
-          "stdDev": 1.94
+          "mean": 19.05,
+          "p50": 18.22,
+          "p95": 21.74,
+          "p99": 24.83,
+          "stdDev": 1.93
         },
         "retrievalStats": {
           "count": 20,
-          "min": 5.6,
-          "max": 11.23,
-          "mean": 7.44,
-          "p50": 7.38,
-          "p95": 10.39,
-          "p99": 11.06,
-          "stdDev": 1.45
+          "min": 4.96,
+          "max": 7.89,
+          "mean": 6.74,
+          "p50": 6.91,
+          "p95": 7.66,
+          "p99": 7.85,
+          "stdDev": 0.79
         },
         "errorCount": 0,
         "errors": []
@@ -764,61 +764,61 @@
             "url": "/api/admin/products?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 6.16,
-              "max": 11.79,
-              "mean": 8.43,
-              "p50": 7.86,
-              "p95": 11.68,
-              "p99": 11.77,
-              "stdDev": 1.72
+              "min": 5.57,
+              "max": 10.62,
+              "mean": 7.59,
+              "p50": 7.42,
+              "p95": 10.42,
+              "p99": 10.58,
+              "stdDev": 1.4
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.45
+            "avgQueryDurationMs": 2.26
           },
           "adminOrders": {
             "url": "/api/admin/orders?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 8.69,
-              "max": 12.54,
-              "mean": 10.7,
-              "p50": 11.14,
-              "p95": 12.05,
-              "p99": 12.45,
-              "stdDev": 1.2
+              "min": 7.69,
+              "max": 14.82,
+              "mean": 10.08,
+              "p50": 10.33,
+              "p95": 12.06,
+              "p99": 14.27,
+              "stdDev": 1.56
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 4.96
+            "avgQueryDurationMs": 4.37
           },
           "adminInventory": {
             "url": "/api/admin/inventory?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 6.98,
-              "max": 11.6,
-              "mean": 8.36,
-              "p50": 7.65,
-              "p95": 11.52,
-              "p99": 11.59,
-              "stdDev": 1.4
+              "min": 6.2,
+              "max": 9.69,
+              "mean": 7.33,
+              "p50": 6.86,
+              "p95": 9.27,
+              "p99": 9.6,
+              "stdDev": 1.08
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.34
+            "avgQueryDurationMs": 2.09
           },
           "adminAuditLogs": {
             "url": "/api/admin/audit-logs?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 5.93,
-              "max": 10.41,
-              "mean": 8.58,
-              "p50": 8.69,
-              "p95": 10.11,
-              "p99": 10.35,
-              "stdDev": 1.27
+              "min": 6.31,
+              "max": 8.93,
+              "mean": 7.63,
+              "p50": 7.79,
+              "p95": 8.63,
+              "p99": 8.87,
+              "stdDev": 0.77
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.69
+            "avgQueryDurationMs": 2.67
           }
         },
         "errorCount": 0,
@@ -833,17 +833,17 @@
         "passed": true,
         "stats": {
           "count": 30,
-          "min": 4.97,
-          "max": 11.53,
-          "mean": 6.97,
-          "p50": 7,
-          "p95": 10.24,
-          "p99": 11.33,
-          "stdDev": 1.6
+          "min": 4.29,
+          "max": 10.97,
+          "mean": 6.08,
+          "p50": 5.92,
+          "p95": 7.93,
+          "p99": 10.21,
+          "stdDev": 1.3
         },
-        "throughputReqSec": 143.27,
+        "throughputReqSec": 164.19,
         "avgQueryCount": 2,
-        "avgQueryDurationMs": 1.71,
+        "avgQueryDurationMs": 1.55,
         "errorCount": 0,
         "errors": []
       },
@@ -852,17 +852,17 @@
         "target": "diagnostic / characterization",
         "stats": {
           "count": 30,
-          "min": 4.34,
-          "max": 8.87,
-          "mean": 5.75,
-          "p50": 5.02,
-          "p95": 8.4,
-          "p99": 8.82,
-          "stdDev": 1.42
+          "min": 3.87,
+          "max": 6.9,
+          "mean": 5.03,
+          "p50": 4.84,
+          "p95": 6.7,
+          "p99": 6.87,
+          "stdDev": 0.87
         },
-        "throughputReqSec": 173.68,
+        "throughputReqSec": 198.35,
         "avgQueryCount": 1,
-        "avgQueryDurationMs": 0.71,
+        "avgQueryDurationMs": 0.6,
         "errorCount": 0,
         "errors": []
       },
@@ -871,17 +871,17 @@
         "target": "diagnostic / characterization",
         "stats": {
           "count": 25,
-          "min": 8.13,
-          "max": 15.81,
-          "mean": 11.45,
-          "p50": 11.42,
-          "p95": 14.06,
-          "p99": 15.4,
-          "stdDev": 1.89
+          "min": 6.61,
+          "max": 21.06,
+          "mean": 10.62,
+          "p50": 8.63,
+          "p95": 18.74,
+          "p99": 20.6,
+          "stdDev": 4.27
         },
-        "throughputReqSec": 87.23,
+        "throughputReqSec": 94.11,
         "avgQueryCount": 2,
-        "avgQueryDurationMs": 2.96,
+        "avgQueryDurationMs": 2.97,
         "errorCount": 0,
         "errors": []
       },
@@ -891,17 +891,17 @@
         "passed": true,
         "stats": {
           "count": 20,
-          "min": 20.84,
-          "max": 43.38,
-          "mean": 28.07,
-          "p50": 28.09,
-          "p95": 33.9,
-          "p99": 41.48,
-          "stdDev": 4.91
+          "min": 22.99,
+          "max": 31.35,
+          "mean": 25.92,
+          "p50": 25.34,
+          "p95": 28.74,
+          "p99": 30.83,
+          "stdDev": 1.87
         },
         "throughputReqSec": 1.95,
         "avgQueryCount": 23,
-        "avgQueryDurationMs": 15.43,
+        "avgQueryDurationMs": 13.73,
         "errorCount": 0,
         "errors": []
       },
@@ -911,17 +911,17 @@
         "gatewayMode": "mocked (0ms gateway overhead, isolated Nexora app+DB latency)",
         "stats": {
           "count": 20,
-          "min": 16.69,
-          "max": 23.22,
-          "mean": 19.25,
-          "p50": 19.53,
-          "p95": 21.8,
-          "p99": 22.94,
-          "stdDev": 1.62
+          "min": 17.12,
+          "max": 26.06,
+          "mean": 20.07,
+          "p50": 19.9,
+          "p95": 22.41,
+          "p99": 25.33,
+          "stdDev": 1.89
         },
-        "throughputReqSec": 2.03,
+        "throughputReqSec": 2.01,
         "avgQueryCount": 16,
-        "avgQueryDurationMs": 9.97,
+        "avgQueryDurationMs": 10.34,
         "errorCount": 0,
         "errors": []
       },
@@ -931,17 +931,17 @@
         "gatewayMode": "mocked signature & fetch (isolating transactional settlement)",
         "stats": {
           "count": 20,
-          "min": 19.44,
-          "max": 29.4,
-          "mean": 23.53,
-          "p50": 23.11,
-          "p95": 28.03,
-          "p99": 29.13,
-          "stdDev": 2.89
+          "min": 20.38,
+          "max": 25.42,
+          "mean": 22.79,
+          "p50": 22.98,
+          "p95": 24.53,
+          "p99": 25.24,
+          "stdDev": 1.38
         },
-        "throughputReqSec": 2.01,
+        "throughputReqSec": 1.98,
         "avgQueryCount": 21,
-        "avgQueryDurationMs": 12.59,
+        "avgQueryDurationMs": 12,
         "errorCount": 0,
         "errors": []
       },
@@ -951,46 +951,46 @@
         "passed": true,
         "stats": {
           "count": 25,
-          "min": 19.44,
-          "max": 30.25,
-          "mean": 23.05,
-          "p50": 22.35,
-          "p95": 27.7,
-          "p99": 29.69,
-          "stdDev": 2.71
+          "min": 18.86,
+          "max": 24.73,
+          "mean": 21.65,
+          "p50": 21.8,
+          "p95": 24.06,
+          "p99": 24.59,
+          "stdDev": 1.52
         },
-        "throughputReqSec": 24.59,
+        "throughputReqSec": 25.66,
         "avgQueryCount": 22,
-        "avgQueryDurationMs": 12.85,
+        "avgQueryDurationMs": 11.81,
         "subScenarios": {
           "firstCapture": {
             "count": 25,
-            "min": 19.44,
-            "max": 30.25,
-            "mean": 23.05,
-            "p50": 22.35,
-            "p95": 27.7,
-            "p99": 29.69,
-            "stdDev": 2.71
+            "min": 18.86,
+            "max": 24.73,
+            "mean": 21.65,
+            "p50": 21.8,
+            "p95": 24.06,
+            "p99": 24.59,
+            "stdDev": 1.52
           },
           "duplicateEvent": {
             "count": 25,
-            "min": 5.97,
-            "max": 11.24,
-            "mean": 8.14,
-            "p50": 8.23,
-            "p95": 9.64,
-            "p99": 10.87,
-            "stdDev": 1.11
+            "min": 6.25,
+            "max": 10.28,
+            "mean": 7.94,
+            "p50": 8.19,
+            "p95": 9.88,
+            "p99": 10.21,
+            "stdDev": 1.18
           },
           "invalidSignature": {
             "count": 1,
-            "min": 5.09,
-            "max": 5.09,
-            "mean": 5.09,
-            "p50": 5.09,
-            "p95": 5.09,
-            "p99": 5.09,
+            "min": 8.33,
+            "max": 8.33,
+            "mean": 8.33,
+            "p50": 8.33,
+            "p95": 8.33,
+            "p99": 8.33,
             "stdDev": 0
           }
         },
@@ -1008,8 +1008,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 66.42,
-            "avgPerRequestMs": 6.64,
+            "totalDurationMs": 46.29,
+            "avgPerRequestMs": 4.63,
             "correctnessPassed": true
           },
           {
@@ -1020,8 +1020,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 50.18,
-            "avgPerRequestMs": 2.01,
+            "totalDurationMs": 62.36,
+            "avgPerRequestMs": 2.49,
             "correctnessPassed": true
           },
           {
@@ -1032,8 +1032,8 @@
             "unexpectedFailures": 0,
             "finalStock": 1,
             "finalReserved": 1,
-            "totalDurationMs": 100.03,
-            "avgPerRequestMs": 2,
+            "totalDurationMs": 87.37,
+            "avgPerRequestMs": 1.75,
             "correctnessPassed": true
           }
         ],
@@ -1049,8 +1049,8 @@
             "finalOrderStatus": "PAID",
             "finalStock": 8,
             "finalReserved": 0,
-            "totalDurationMs": 82.31,
-            "avgPerCallMs": 8.23,
+            "totalDurationMs": 91.48,
+            "avgPerCallMs": 9.15,
             "correctnessPassed": true
           },
           {
@@ -1060,8 +1060,8 @@
             "finalOrderStatus": "PAID",
             "finalStock": 8,
             "finalReserved": 0,
-            "totalDurationMs": 69.96,
-            "avgPerCallMs": 2.8,
+            "totalDurationMs": 69.77,
+            "avgPerCallMs": 2.79,
             "correctnessPassed": true
           }
         ],
@@ -1074,8 +1074,8 @@
         "distinctOrderIdsInResponses": 1,
         "ordersInDatabase": 1,
         "reservationsInDatabase": 1,
-        "totalDurationMs": 92,
-        "avgPerRequestMs": 9.2,
+        "totalDurationMs": 100.18,
+        "avgPerRequestMs": 10.02,
         "correctnessPassed": true
       },
       "bench11": {
@@ -1083,23 +1083,23 @@
         "target": "diagnostic / characterization",
         "checkoutStats": {
           "count": 20,
-          "min": 15.61,
-          "max": 24.52,
-          "mean": 19.53,
-          "p50": 19.82,
-          "p95": 23.76,
-          "p99": 24.37,
-          "stdDev": 2.65
+          "min": 16.63,
+          "max": 24.47,
+          "mean": 18.51,
+          "p50": 18.19,
+          "p95": 20.23,
+          "p99": 23.62,
+          "stdDev": 1.57
         },
         "retrievalStats": {
           "count": 20,
-          "min": 4.69,
-          "max": 8.6,
-          "mean": 6.7,
-          "p50": 6.83,
-          "p95": 8.52,
-          "p99": 8.58,
-          "stdDev": 1.16
+          "min": 5.11,
+          "max": 9.35,
+          "mean": 6.81,
+          "p50": 6.44,
+          "p95": 8.99,
+          "p99": 9.27,
+          "stdDev": 1.31
         },
         "errorCount": 0,
         "errors": []
@@ -1112,61 +1112,61 @@
             "url": "/api/admin/products?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 5.52,
-              "max": 15.89,
-              "mean": 8.39,
-              "p50": 7.76,
-              "p95": 13.19,
-              "p99": 15.35,
-              "stdDev": 2.6
+              "min": 6.17,
+              "max": 9.77,
+              "mean": 7.6,
+              "p50": 7.52,
+              "p95": 9.64,
+              "p99": 9.75,
+              "stdDev": 1.04
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.59
+            "avgQueryDurationMs": 2.13
           },
           "adminOrders": {
             "url": "/api/admin/orders?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 7.86,
-              "max": 12.76,
-              "mean": 10.3,
-              "p50": 10.36,
-              "p95": 12.4,
-              "p99": 12.69,
-              "stdDev": 1.35
+              "min": 7.69,
+              "max": 14.85,
+              "mean": 10.29,
+              "p50": 10.07,
+              "p95": 12.69,
+              "p99": 14.42,
+              "stdDev": 1.68
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 5.06
+            "avgQueryDurationMs": 4.92
           },
           "adminInventory": {
             "url": "/api/admin/inventory?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 5.29,
-              "max": 9.17,
-              "mean": 7.18,
-              "p50": 6.8,
-              "p95": 9,
-              "p99": 9.13,
-              "stdDev": 1.25
+              "min": 5.75,
+              "max": 9.72,
+              "mean": 7.48,
+              "p50": 7.37,
+              "p95": 8.8,
+              "p99": 9.54,
+              "stdDev": 0.98
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.12
+            "avgQueryDurationMs": 2.09
           },
           "adminAuditLogs": {
             "url": "/api/admin/audit-logs?page=1&limit=10",
             "stats": {
               "count": 15,
-              "min": 5.5,
-              "max": 11.03,
-              "mean": 8.34,
-              "p50": 8.43,
-              "p95": 10.56,
-              "p99": 10.94,
-              "stdDev": 1.47
+              "min": 6.83,
+              "max": 10.71,
+              "mean": 8.14,
+              "p50": 8.08,
+              "p95": 9.81,
+              "p99": 10.53,
+              "stdDev": 1
             },
             "avgQueryCount": 3,
-            "avgQueryDurationMs": 2.96
+            "avgQueryDurationMs": 2.8
           }
         },
         "errorCount": 0,
