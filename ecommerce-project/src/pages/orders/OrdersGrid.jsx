@@ -6,16 +6,18 @@ import { cartApi } from '../../api/cart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { getOrderStatusPresentation } from '../../utils/orderStatus.js';
 
 function OrderHeader({ order }) {
   const totalPaise = order.totalPaise ?? order.totalCostPaise ?? order.totalCostCents ?? 0;
   const orderDate = order.createdAt || order.orderTimeMs;
+  const presentation = getOrderStatusPresentation(order.status);
 
   return (
     <div className="order-card-header">
       <div className="order-header-meta-group">
         <div className="order-meta-block">
-          <span className="order-meta-label">Order Placed</span>
+          <span className="order-meta-label">{presentation.headerLabel}</span>
           <span className="order-meta-value">{orderDate ? dayjs(orderDate).format('MMMM D, YYYY') : 'Recent'}</span>
         </div>
 
@@ -27,7 +29,7 @@ function OrderHeader({ order }) {
         {order.status && (
           <div className="order-meta-block">
             <span className="order-meta-label">Status</span>
-            <div><Badge status={order.status}>{order.status}</Badge></div>
+            <div><Badge status={presentation.normalizedStatus}>{presentation.normalizedStatus}</Badge></div>
           </div>
         )}
       </div>
@@ -44,6 +46,8 @@ function OrderDetailsGrid({ order, loadCart }) {
   const items = order.items || order.products || [];
   const [addingId, setAddingId] = useState(null);
   const [addedId, setAddedId] = useState(null);
+  const presentation = getOrderStatusPresentation(order.status);
+  const hasActions = presentation.showBuyAgain || presentation.showTrackPackage;
 
   const handleBuyAgain = async (productId) => {
     if (!productId) return;
@@ -70,7 +74,7 @@ function OrderDetailsGrid({ order, loadCart }) {
       {items.map((item, idx) => {
         const productId = item.productId || item.product_id || item.product?.id || item.id;
         const productName = item.productName || item.product_name || item.name || item.product?.name || 'Product';
-        const productImage = item.image || item.imageUrl || item.image_url || item.product?.image || 'images/products/athletic-cotton-socks-6-pairs.jpg';
+        const productImage = item.imageUrl || item.image || item.image_url || item.product?.image || 'images/products/athletic-cotton-socks-6-pairs.jpg';
         const itemKey = item.id || `${order.id}-${productId}-${idx}`;
         const unitPrice = item.unitPricePaise ?? item.price_paise ?? item.pricePaise ?? item.unit_price_paise ?? 0;
 
@@ -88,23 +92,29 @@ function OrderDetailsGrid({ order, loadCart }) {
               )}
             </div>
 
-            <div className="order-item-actions">
-              <Button
-                variant="primary"
-                size="sm"
-                className="buy-again-button"
-                onClick={() => handleBuyAgain(productId)}
-                loading={addingId === productId}
-              >
-                {addedId === productId ? '✓ Added' : 'Buy Again'}
-              </Button>
+            {hasActions && (
+              <div className="order-item-actions">
+                {presentation.showBuyAgain && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="buy-again-button"
+                    onClick={() => handleBuyAgain(productId)}
+                    loading={addingId === productId}
+                  >
+                    {addedId === productId ? '✓ Added' : 'Buy Again'}
+                  </Button>
+                )}
 
-              <Link to={`/tracking/${order.id}/${productId}`} state={{ guestToken: order.guestToken }}>
-                <Button variant="secondary" size="sm" style={{ width: '100%' }}>
-                  Track Package
-                </Button>
-              </Link>
-            </div>
+                {presentation.showTrackPackage && (
+                  <Link to={`/tracking/${order.id}/${productId}`} state={{ guestToken: order.guestToken }}>
+                    <Button variant="secondary" size="sm" style={{ width: '100%' }}>
+                      Track Package
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

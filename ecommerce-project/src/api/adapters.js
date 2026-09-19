@@ -111,6 +111,7 @@ export function adaptOrderItem(item) {
     name: item.productName || item.product_name || item.product_name_snapshot || item.name || 'Product',
     productName: item.productName || item.product_name || item.product_name_snapshot || item.name || 'Product',
     image: item.imageUrl || item.image_url || item.image || 'images/products/athletic-cotton-socks-6-pairs.jpg',
+    imageUrl: item.imageUrl || item.image_url || item.image || 'images/products/athletic-cotton-socks-6-pairs.jpg',
     unitPricePaise: unitPrice,
     quantity: qty,
     lineTotalPaise: lineTotal,

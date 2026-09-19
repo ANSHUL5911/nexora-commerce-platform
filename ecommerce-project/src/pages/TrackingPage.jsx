@@ -24,7 +24,11 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
       try {
         const guestToken = location.state?.guestToken || null;
         const response = await ordersApi.getOrder(orderId, { guestToken });
-        const rawOrder = response.order || response.data?.order || response;
+        const rawOrder =
+          response.order ||
+          response.data?.order ||
+          response.data ||
+          response;
         if (isMounted) {
           setOrder(adaptOrder(rawOrder));
         }
@@ -81,24 +85,39 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
   const item = items.find((p) => p.productId === productId || p.id === productId) || items[0] || {};
   const status = (order.status || 'PROCESSING').toUpperCase();
 
+  const isPending = status === 'PENDING_PAYMENT';
   const isCancelled = status === 'CANCELLED';
+  const isExpired = status === 'EXPIRED';
+  const isRefunded = status === 'REFUNDED';
   const isDelivered = status === 'DELIVERED';
   const isShipped = status === 'SHIPPED';
   const isProcessing = ['PAID', 'PROCESSING', 'CONFIRMED'].includes(status);
-  const isPending = status === 'PENDING_PAYMENT';
 
-  let progressPercent = 33;
+  let progressPercent = 0;
   if (isDelivered) {
     progressPercent = 100;
   } else if (isShipped) {
     progressPercent = 66;
   } else if (isProcessing) {
     progressPercent = 33;
-  } else if (isCancelled) {
+  } else {
     progressPercent = 0;
   }
 
   const deliveryDate = dayjs(order.createdAt).add(5, 'day').format('dddd, MMMM D, YYYY');
+
+  let statusHeading = `Estimated Delivery: ${deliveryDate}`;
+  if (isDelivered) {
+    statusHeading = `Delivered on ${dayjs(order.updatedAt || order.createdAt).format('MMMM D, YYYY')}`;
+  } else if (isPending) {
+    statusHeading = 'Payment required before fulfillment tracking becomes available.';
+  } else if (isCancelled) {
+    statusHeading = 'Order was cancelled. Fulfillment is inactive.';
+  } else if (isExpired) {
+    statusHeading = 'Order reservation expired. Fulfillment is inactive.';
+  } else if (isRefunded) {
+    statusHeading = 'Order was refunded. Fulfillment is inactive.';
+  }
 
   return (
     <>
@@ -121,7 +140,7 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
             </div>
 
             <h1 className="tracking-delivery-date">
-              {isDelivered ? `Delivered on ${dayjs(order.updatedAt || order.createdAt).format('MMMM D, YYYY')}` : `Estimated Delivery: ${deliveryDate}`}
+              {statusHeading}
             </h1>
           </header>
 
@@ -129,7 +148,7 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
             <div className="tracking-product-img-wrap">
               <img
                 className="tracking-product-img"
-                src={item.image || item.imageUrl || 'images/products/athletic-cotton-socks-6-pairs.jpg'}
+                src={item.imageUrl || item.image || 'images/products/athletic-cotton-socks-6-pairs.jpg'}
                 alt={item.productName || item.name || 'Product'}
               />
             </div>
@@ -146,14 +165,14 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
           {/* Stepper Timeline */}
           <section className="tracking-stepper" aria-label="Fulfillment Progress">
             <div className="tracking-labels-row">
-              <span className={`tracking-label ${isPending || isProcessing ? 'active' : ''}`}>Preparing</span>
+              <span className={`tracking-label ${isProcessing ? 'active' : ''}`}>Preparing</span>
               <span className={`tracking-label ${isShipped ? 'active' : ''}`}>In Transit</span>
               <span className={`tracking-label ${isDelivered ? 'active' : ''}`}>Delivered</span>
             </div>
 
             <div className="tracking-bar-bg" role="progressbar" aria-valuenow={progressPercent} aria-valuemin="0" aria-valuemax="100">
               <div
-                className={`tracking-bar-fill ${isCancelled ? 'cancelled' : ''}`}
+                className={`tracking-bar-fill ${isCancelled || isExpired || isRefunded ? 'cancelled' : ''}`}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>

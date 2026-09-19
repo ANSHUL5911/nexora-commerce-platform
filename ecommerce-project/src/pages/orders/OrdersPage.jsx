@@ -22,7 +22,11 @@ export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
 
       if (inMemoryGuestToken && inMemoryOrderId) {
         const gOrderRes = await ordersApi.getOrder(inMemoryOrderId, { guestToken: inMemoryGuestToken });
-        const gOrder = gOrderRes.order || gOrderRes.data?.order || gOrderRes;
+        const gOrder =
+          gOrderRes.order ||
+          gOrderRes.data?.order ||
+          gOrderRes.data ||
+          gOrderRes;
         if (gOrder) {
           const adapted = adaptOrder(gOrder);
           adapted.guestToken = inMemoryGuestToken;

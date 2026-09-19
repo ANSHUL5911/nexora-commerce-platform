@@ -225,4 +225,332 @@ describe('OrdersPage component', () => {
     });
     expect(loadCart).toHaveBeenCalled();
   });
+
+  it('rehydrates and renders guest order using canonical { success: true, data: orderDTO } envelope from location.state', async () => {
+    ordersApi.getOrder.mockResolvedValue({
+      success: true,
+      data: {
+        id: 'guest-order-8888',
+        status: 'PAID',
+        orderStatus: 'PAID',
+        subtotalPaise: 150000,
+        shippingFeePaise: 0,
+        totalPaise: 150000,
+        totalCostPaise: 150000,
+        createdAt: '2026-09-19T05:00:00.000Z',
+        items: [
+          {
+            id: 'item-guest-1',
+            productId: 'prod-guest-1',
+            productName: 'Linen Canvas Utility Overshirt',
+            quantity: 1,
+            unitPricePaise: 150000,
+            imageUrl: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80',
+          },
+        ],
+      },
+    });
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/orders',
+            state: { guestToken: 'sample-guest-token-123', orderId: 'guest-order-8888' },
+          },
+        ]}
+      >
+        <OrdersPage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('guest-order-8888')).toBeInTheDocument();
+    expect(screen.getByText('Linen Canvas Utility Overshirt')).toBeInTheDocument();
+    expect(screen.getByText('Quantity: 1')).toBeInTheDocument();
+    const img = screen.getByAltText('Linen Canvas Utility Overshirt');
+    expect(img).toHaveAttribute('src', 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80');
+    expect(ordersApi.getOrder).toHaveBeenCalledWith('guest-order-8888', { guestToken: 'sample-guest-token-123' });
+  });
+
+  describe('Order State Presentation & Action Guard Matrix (Phase 07.24)', () => {
+    it('PENDING_PAYMENT renders PAYMENT INITIATED, badge, hides Track Package and Buy Again, and does not render ORDER PLACED', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-pending-1',
+            status: 'PENDING_PAYMENT',
+            totalPaise: 450000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-pending-1',
+                productId: 'prod-p1',
+                productName: 'Raw Selvedge Denim',
+                quantity: 1,
+                unitPricePaise: 450000,
+                imageUrl: 'https://images.unsplash.com/photo-denim.jpg',
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('PAYMENT INITIATED')).toBeInTheDocument();
+      expect(screen.getByText('PENDING_PAYMENT')).toBeInTheDocument();
+      expect(screen.queryByText('ORDER PLACED')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /track package/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /buy again/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /complete payment/i })).not.toBeInTheDocument();
+
+      // Verify real imageUrl renders on PENDING_PAYMENT order without falling back to socks
+      const img = screen.getByAltText('Raw Selvedge Denim');
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', 'https://images.unsplash.com/photo-denim.jpg');
+    });
+
+    it('PROCESSING renders ORDER PLACED and shows Track Package', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-proc-1',
+            status: 'PROCESSING',
+            totalPaise: 200000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-proc-1',
+                productId: 'prod-proc-1',
+                productName: 'Merino Wool Beanie',
+                quantity: 1,
+                unitPricePaise: 200000,
+                imageUrl: 'https://images.unsplash.com/photo-beanie.jpg',
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER PLACED')).toBeInTheDocument();
+      expect(screen.getByText('PROCESSING')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /track package/i })).toBeInTheDocument();
+    });
+
+    it('SHIPPED renders ORDER PLACED and shows Track Package', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-ship-1',
+            status: 'SHIPPED',
+            totalPaise: 300000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-ship-1',
+                productId: 'prod-ship-1',
+                productName: 'Structured Canvas Tote',
+                quantity: 1,
+                unitPricePaise: 300000,
+                imageUrl: 'https://images.unsplash.com/photo-tote.jpg',
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER PLACED')).toBeInTheDocument();
+      expect(screen.getByText('SHIPPED')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /track package/i })).toBeInTheDocument();
+    });
+
+    it('DELIVERED renders ORDER PLACED and shows Buy Again and Track Package', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-deliv-1',
+            status: 'DELIVERED',
+            totalPaise: 150000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-deliv-1',
+                productId: 'prod-deliv-1',
+                productName: 'Minimalist Oxford Shoes',
+                quantity: 1,
+                unitPricePaise: 150000,
+                imageUrl: 'https://images.unsplash.com/photo-shoes.jpg',
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER PLACED')).toBeInTheDocument();
+      expect(screen.getByText('DELIVERED')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buy again/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /track package/i })).toBeInTheDocument();
+    });
+
+    it('CANCELLED renders ORDER CANCELLED and hides Track Package while preserving Buy Again', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-canc-1',
+            status: 'CANCELLED',
+            totalPaise: 100000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-canc-1',
+                productId: 'prod-canc-1',
+                productName: 'Twisted Seam Knit',
+                quantity: 1,
+                unitPricePaise: 100000,
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER CANCELLED')).toBeInTheDocument();
+      expect(screen.getByText('CANCELLED')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /track package/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buy again/i })).toBeInTheDocument();
+    });
+
+    it('EXPIRED renders ORDER EXPIRED and hides Track Package while preserving Buy Again', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-exp-1',
+            status: 'EXPIRED',
+            totalPaise: 120000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-exp-1',
+                productId: 'prod-exp-1',
+                productName: 'Classic Poplin Shirt',
+                quantity: 1,
+                unitPricePaise: 120000,
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER EXPIRED')).toBeInTheDocument();
+      expect(screen.getByText('EXPIRED')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /track package/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buy again/i })).toBeInTheDocument();
+    });
+
+    it('REFUNDED renders ORDER REFUNDED and hides Track Package while preserving Buy Again', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-ref-1',
+            status: 'REFUNDED',
+            totalPaise: 180000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-ref-1',
+                productId: 'prod-ref-1',
+                productName: 'Heavyweight Fleece Hoodie',
+                quantity: 1,
+                unitPricePaise: 180000,
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER REFUNDED')).toBeInTheDocument();
+      expect(screen.getByText('REFUNDED')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /track package/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buy again/i })).toBeInTheDocument();
+    });
+
+    it('Unknown status renders ORDER STATUS safely without crashing and without Track Package', async () => {
+      ordersApi.listOrders.mockResolvedValue({
+        success: true,
+        data: [
+          {
+            id: 'ord-unk-1',
+            status: 'SOME_FUTURE_STATUS',
+            totalPaise: 90000,
+            createdAt: '2026-09-19T06:00:00.000Z',
+            items: [
+              {
+                id: 'item-unk-1',
+                productId: 'prod-unk-1',
+                productName: 'Mystery Accessory',
+                quantity: 1,
+                unitPricePaise: 90000,
+              },
+            ],
+          },
+        ],
+      });
+
+      render(
+        <MemoryRouter>
+          <OrdersPage cart={[]} loadCart={loadCart} />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText('ORDER STATUS')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /track package/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('ORDER PLACED')).not.toBeInTheDocument();
+    });
+  });
 });
