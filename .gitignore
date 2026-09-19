@@ -1,8 +1,48 @@
-# Root gitignore
-node_modules/
+# ============================================================
+# Nexora Commerce Platform — Git Ignore
+# ============================================================
+
+# Environment / secrets
 .env
 .env.*
 !.env.example
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Runtime / local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# OS
 .DS_Store
 Thumbs.db
-*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
+temp/
+
+# Certificates / private keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local tooling / cache
+.npm/
+.eslintcache
+.cache/
