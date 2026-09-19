@@ -1221,7 +1221,7 @@ The OpenAPI 3.0 specification (`docs/openapi.yaml`) serves as the single authori
     "city": "Bengaluru",
     "state": "Karnataka",
     "pincode": "560001",
-    "phone": "+919876543210"
+    "phone": "+91-XXXXXXXXXX"
   },
   "shippingSpeed": "EXPRESS"
 }
@@ -1241,7 +1241,7 @@ The OpenAPI 3.0 specification (`docs/openapi.yaml`) serves as the single authori
       "attemptNumber": 1,
       "razorpayOrderId": "order_M1029384756",
       "amountPaise": 299900,
-      "razorpayKeyId": "rzp_test_51Nx9A2"
+      "razorpayKeyId": "<REDACTED_RAZORPAY_KEY_ID>"
     },
     "reservationExpiresAt": "2026-09-06T00:45:00.000Z"
   },
