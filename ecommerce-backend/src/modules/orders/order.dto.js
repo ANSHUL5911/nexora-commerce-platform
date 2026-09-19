@@ -7,20 +7,22 @@
 export function toOrderItemDTO(item) {
   if (!item) return null;
 
-  const unitPrice = Number(item.unit_price_paise ?? 0);
-  const qty = Number(item.quantity ?? 0);
+  const rawItem = typeof item.toJSON === 'function' ? item.toJSON() : item;
+  const unitPrice = Number(rawItem.unit_price_paise ?? rawItem.unitPricePaise ?? 0);
+  const qty = Number(rawItem.quantity ?? 0);
   const lineTotal = unitPrice * qty;
 
   return {
-    id: item.id,
-    orderId: item.order_id,
-    productId: item.product_id,
-    productName: item.product_name_snapshot,
+    id: rawItem.id,
+    orderId: rawItem.order_id || rawItem.orderId,
+    productId: rawItem.product_id || rawItem.productId,
+    productName: rawItem.product_name_snapshot || rawItem.productName,
+    imageUrl: rawItem.product?.image_url ?? rawItem.imageUrl ?? null,
     unitPricePaise: unitPrice,
     quantity: qty,
     lineTotalPaise: lineTotal,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
+    createdAt: rawItem.created_at || rawItem.createdAt,
+    updatedAt: rawItem.updated_at || rawItem.updatedAt,
   };
 }
 

@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Order, OrderItem, User, PaymentAttempt, StockRestockLog } from '../../models/index.js';
+import { Order, OrderItem, User, PaymentAttempt, StockRestockLog, Product } from '../../models/index.js';
 
 export const ORDER_PUBLIC_ATTRIBUTES = [
   'id',
@@ -110,7 +110,16 @@ export const orderRepository = {
         {
           model: OrderItem,
           as: 'items',
+          required: false,
           attributes: ORDER_ITEM_PUBLIC_ATTRIBUTES,
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['image_url'],
+              required: false,
+            },
+          ],
         },
       ]
       : [];
@@ -157,7 +166,16 @@ export const orderRepository = {
         {
           model: OrderItem,
           as: 'items',
+          required: false,
           attributes: ORDER_ITEM_PUBLIC_ATTRIBUTES,
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['image_url'],
+              required: false,
+            },
+          ],
         },
       ],
       order: [
@@ -283,7 +301,16 @@ export const orderRepository = {
         {
           model: OrderItem,
           as: 'items',
+          required: false,
           attributes: ORDER_ITEM_PUBLIC_ATTRIBUTES,
+          include: [
+            {
+              model: Product,
+              as: 'product',
+              attributes: ['image_url'],
+              required: false,
+            },
+          ],
         },
         {
           model: User,
@@ -327,7 +354,16 @@ export const orderRepository = {
           {
             model: OrderItem,
             as: 'items',
+            required: false,
             attributes: ORDER_ITEM_PUBLIC_ATTRIBUTES,
+            include: [
+              {
+                model: Product,
+                as: 'product',
+                attributes: ['image_url'],
+                required: false,
+              },
+            ],
           },
           {
             model: User,

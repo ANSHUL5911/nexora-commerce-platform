@@ -283,4 +283,75 @@ describe('Phase 07.7 — Order API Integration & Security Tests', () => {
       expect(res.body.data.cvv).toBeUndefined();
     });
   });
+
+  describe('6. Order Item Product Association and Image URL Eager Loading', () => {
+    it('GET /api/orders returns imageUrl on each order item matching Product.image_url', async () => {
+      const auth = await createAndLoginUser();
+      const product1 = await createTestProduct({
+        name: 'Linen Canvas Utility Overshirt',
+        imageUrl: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80',
+      });
+      const product2 = await createTestProduct({
+        name: 'Polarized Titanium Aviator Sunglasses',
+        imageUrl: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80',
+      });
+
+      const order = await createTestOrder({ userId: auth.user.id });
+      await createTestOrderItem({
+        orderId: order.id,
+        productId: product1.id,
+        productNameSnapshot: product1.name,
+      });
+      await createTestOrderItem({
+        orderId: order.id,
+        productId: product2.id,
+        productNameSnapshot: product2.name,
+      });
+
+      const res = await request(app)
+        .get('/api/orders')
+        .set('Cookie', auth.cookieHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveLength(1);
+
+      const items = res.body.data[0].items;
+      expect(items).toHaveLength(2);
+
+      const item1 = items.find((i) => i.productId === product1.id);
+      expect(item1).toBeDefined();
+      expect(item1.productName).toBe('Linen Canvas Utility Overshirt');
+      expect(item1.imageUrl).toBe(product1.image_url);
+
+      const item2 = items.find((i) => i.productId === product2.id);
+      expect(item2).toBeDefined();
+      expect(item2.productName).toBe('Polarized Titanium Aviator Sunglasses');
+      expect(item2.imageUrl).toBe(product2.image_url);
+    });
+
+    it('GET /api/orders/:orderId also returns imageUrl for each order item', async () => {
+      const auth = await createAndLoginUser();
+      const product = await createTestProduct({
+        name: 'Monolith Architectural Coat',
+        imageUrl: 'https://images.unsplash.com/photo-1539533018447-63fcce667883?auto=format&fit=crop&w=800&q=80',
+      });
+
+      const order = await createTestOrder({ userId: auth.user.id });
+      await createTestOrderItem({
+        orderId: order.id,
+        productId: product.id,
+        productNameSnapshot: product.name,
+      });
+
+      const res = await request(app)
+        .get(`/api/orders/${order.id}`)
+        .set('Cookie', auth.cookieHeader);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.items).toHaveLength(1);
+      expect(res.body.data.items[0].imageUrl).toBe(product.image_url);
+    });
+  });
 });

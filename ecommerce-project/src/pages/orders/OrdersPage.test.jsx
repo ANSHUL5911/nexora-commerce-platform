@@ -42,8 +42,12 @@ describe('OrdersPage component', () => {
     loadCart = vi.fn();
   });
 
-  it('renders empty orders state when list is empty', async () => {
-    ordersApi.listOrders.mockResolvedValue({ orders: [] });
+  it('renders empty orders state when list is empty (canonical format)', async () => {
+    ordersApi.listOrders.mockResolvedValue({
+      success: true,
+      data: [],
+      pagination: { page: 1, limit: 10, totalItems: 0, totalPages: 0 },
+    });
 
     render(
       <MemoryRouter>
@@ -55,7 +59,98 @@ describe('OrdersPage component', () => {
     expect(screen.getByRole('link', { name: /start shopping/i })).toBeInTheDocument();
   });
 
-  it('renders orders list with order details, status badge, and item previews', async () => {
+  it('renders orders list with canonical backend response envelope { success: true, data: [...], pagination: {...} }', async () => {
+    ordersApi.listOrders.mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: '11e7e98c-41ef-4a80-b20b-b5418019fbe0',
+          userId: '52d651e5-259f-4bc9-ba5f-54c1ab5dbd2e',
+          status: 'PAID',
+          orderStatus: 'PAID',
+          subtotalPaise: 2779900,
+          shippingFeePaise: 30000,
+          totalPaise: 2809900,
+          totalCostPaise: 2809900,
+          createdAt: '2026-09-19T04:40:00.000Z',
+          items: [
+            {
+              id: 'oi-1',
+              productId: 'd0000000-0000-4000-8000-000000000011',
+              productName: 'Linen Canvas Utility Overshirt',
+              quantity: 2,
+              unitPricePaise: 109000,
+              lineTotalPaise: 218000,
+              imageUrl: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80',
+            },
+          ],
+        },
+      ],
+      pagination: {
+        page: 1,
+        limit: 10,
+        totalItems: 1,
+        totalPages: 1,
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <OrdersPage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('11e7e98c-41ef-4a80-b20b-b5418019fbe0')).toBeInTheDocument();
+    expect(screen.getByText('PAID')).toBeInTheDocument();
+    expect(screen.getByText('Linen Canvas Utility Overshirt')).toBeInTheDocument();
+    expect(screen.getByText('Quantity: 2')).toBeInTheDocument();
+    expect(screen.getByText('₹28099.00')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /buy again/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /track package/i })).toBeInTheDocument();
+
+    // Verify correct product imageUrl is rendered instead of generic fallback
+    const img = screen.getByAltText('Linen Canvas Utility Overshirt');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=80');
+  });
+
+  it('renders fallback placeholder image when order item imageUrl is null or missing', async () => {
+    ordersApi.listOrders.mockResolvedValue({
+      success: true,
+      data: [
+        {
+          id: 'ord-fallback-null',
+          status: 'PAID',
+          totalPaise: 100000,
+          created_at: '2026-09-19T04:40:00.000Z',
+          items: [
+            {
+              id: 'oi-fallback',
+              productId: 'p-none',
+              productName: 'Custom Heritage Jacket',
+              quantity: 1,
+              unitPricePaise: 100000,
+              imageUrl: null,
+            },
+          ],
+        },
+      ],
+      pagination: { page: 1, limit: 10, totalItems: 1, totalPages: 1 },
+    });
+
+    render(
+      <MemoryRouter>
+        <OrdersPage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('ord-fallback-null')).toBeInTheDocument();
+    const img = screen.getByAltText('Custom Heritage Jacket');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'images/products/athletic-cotton-socks-6-pairs.jpg');
+  });
+
+  it('renders orders list with legacy response format { orders: [...] } for backward compatibility', async () => {
     ordersApi.listOrders.mockResolvedValue({
       orders: [
         {

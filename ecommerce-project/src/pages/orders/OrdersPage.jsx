@@ -34,7 +34,9 @@ export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
       const response = await ordersApi.listOrders();
       const rawOrders = Array.isArray(response)
         ? response
-        : (response?.orders || response?.data?.orders || []);
+        : Array.isArray(response?.data)
+          ? response.data
+          : (response?.orders || response?.data?.orders || []);
 
       setOrders(rawOrders.map(adaptOrder));
     } catch (err) {
