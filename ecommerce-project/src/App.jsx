@@ -4,7 +4,7 @@ import './App.css';
 import { cartApi } from './api/cart.js';
 import { authApi } from './api/auth.js';
 import { productsApi } from './api/products.js';
-import { getGuestCart, hydrateGuestCartItems } from './api/guestCart.js';
+import { getGuestCart, hydrateGuestCartItems, clearGuestCart, removeGuestCartItem } from './api/guestCart.js';
 import { adaptCartItem } from './api/adapters.js';
 import { HomePage } from './pages/home/HomePage.jsx';
 import { ProductDetailPage } from './pages/product/ProductDetailPage.jsx';
@@ -58,13 +58,45 @@ function App() {
     }
   }, []);
 
+  const migrateGuestCartToServer = useCallback(async () => {
+    try {
+      const rawGuestItems = getGuestCart();
+      if (!rawGuestItems || rawGuestItems.length === 0) return;
+
+      for (const item of rawGuestItems) {
+        try {
+          await cartApi.addItem({ productId: item.productId, quantity: item.quantity });
+          // Invariant: remove item locally ONLY after confirmed successful POST
+          removeGuestCartItem(item.productId);
+        } catch (err) {
+          console.error('Failed to transfer guest cart item to server cart:', err);
+          // Invariant: preserve failed/unmigrated item in localStorage
+        }
+      }
+
+      const remainingItems = getGuestCart();
+      if (remainingItems.length === 0) {
+        clearGuestCart();
+      }
+    } catch (err) {
+      console.error('Failed to read guest cart for transfer:', err);
+    }
+  }, []);
+
   const loadSession = useCallback(async () => {
     try {
       const res = await authApi.getCurrentUser();
       const user = res?.user || null;
-      setCurrentUser(user);
-      currentUserRef.current = user;
-      await loadCart(user);
+      if (user) {
+        await migrateGuestCartToServer();
+        await loadCart(user);
+        setCurrentUser(user);
+        currentUserRef.current = user;
+      } else {
+        setCurrentUser(null);
+        currentUserRef.current = null;
+        await loadCart(null);
+      }
     } catch {
       setCurrentUser(null);
       currentUserRef.current = null;
@@ -72,17 +104,24 @@ function App() {
     } finally {
       setAuthLoading(false);
     }
-  }, [loadCart]);
+  }, [loadCart, migrateGuestCartToServer]);
 
   useEffect(() => {
     loadSession();
   }, [loadSession]);
 
-  const handleAuthChange = useCallback((user) => {
-    setCurrentUser(user);
-    currentUserRef.current = user;
-    loadCart(user);
-  }, [loadCart]);
+  const handleAuthChange = useCallback(async (user) => {
+    if (user) {
+      await migrateGuestCartToServer();
+      await loadCart(user);
+      setCurrentUser(user);
+      currentUserRef.current = user;
+    } else {
+      setCurrentUser(null);
+      currentUserRef.current = null;
+      await loadCart(null);
+    }
+  }, [loadCart, migrateGuestCartToServer]);
 
   return (
     <Routes>
@@ -116,6 +155,7 @@ function App() {
             cart={cart}
             loadCart={loadCart}
             currentUser={currentUser}
+            authLoading={authLoading}
             onAuthChange={handleAuthChange}
           />
         }
@@ -128,6 +168,8 @@ function App() {
             cartMeta={cartMeta}
             loadCart={loadCart}
             currentUser={currentUser}
+            authLoading={authLoading}
+            onAuthChange={handleAuthChange}
           />
         }
       />

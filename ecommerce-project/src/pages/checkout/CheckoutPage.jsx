@@ -9,11 +9,13 @@ import { PaymentSummary } from './PaymentSummary';
 import { DEFAULT_DELIVERY_OPTIONS } from './deliveryOptionsData';
 import { checkoutApi } from '../../api/checkout';
 import { paymentsApi } from '../../api/payments';
-import { clearGuestCart } from '../../api/guestCart';
+import { AuthModal } from '../../components/auth/AuthModal';
 import './CheckoutPage.css';
 
-export function CheckoutPage({ cart = [], loadCart, currentUser }) {
+export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = false, onAuthChange }) {
     const navigate = useNavigate();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authMode, setAuthMode] = useState('login');
 
     // Step state tracking: 1, 2, 3, or 4
     const [activeStep, setActiveStep] = useState(1);
@@ -41,7 +43,6 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
     const [paymentState, setPaymentState] = useState('READY_FOR_PAYMENT');
     const [serverError, setServerError] = useState('');
     const [pendingOrder, setPendingOrder] = useState(null);
-    const [guestToken, setGuestToken] = useState(null);
 
     // Subtotal and Total calculations (Integer Paise)
     const subtotalPaise = (cart || []).reduce((sum, item) => {
@@ -74,12 +75,16 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
 
     // Payment Execution Flow
     const handleInitiateAndPay = async () => {
+        if (!currentUser) {
+            setIsAuthModalOpen(true);
+            return;
+        }
+
         setPaymentState('PAYMENT_PROCESSING');
         setServerError('');
 
         try {
             let orderId = pendingOrder?.id;
-            let currentGuestToken = guestToken;
 
             // Step 1: Initiate Unified Checkout if not already created
             if (!pendingOrder) {
@@ -95,55 +100,40 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
                     shippingMethod,
                 };
 
-                // Guest buyer: provide direct items payload required by backend
-                if (currentUser === null) {
-                    initiatePayload.items = (cart || []).map((item) => ({
-                        productId: item.productId || item.id,
-                        quantity: item.quantity,
-                    }));
-                }
-
                 const checkoutResult = await checkoutApi.initiateCheckout(initiatePayload);
 
                 const createdOrder = checkoutResult.order || checkoutResult.data?.order || checkoutResult.data || checkoutResult;
                 orderId = createdOrder.id;
-                currentGuestToken = checkoutResult.guestToken || checkoutResult.data?.guestToken || null;
 
                 setPendingOrder(createdOrder);
-                if (currentGuestToken) {
-                    setGuestToken(currentGuestToken);
-                }
-
-                // If guest checkout successfully created Order, clear local guest cart
-                if (currentUser === null && orderId) {
-                    clearGuestCart();
-                }
             }
 
             // Step 2: Create Payment Attempt
             const paymentResult = await paymentsApi.createPaymentOrder({
                 orderId,
-                guestToken: currentGuestToken,
             });
 
             const paymentData = paymentResult.data || paymentResult;
 
             // Step 3: Launch Razorpay Checkout Modal
-            if (typeof window !== 'undefined' && window.Razorpay && paymentData.razorpayOrderId) {
+            const razorpayKey = paymentData.razorpayKeyId || paymentData.keyId;
+            const razorpayAmount = paymentData.amountPaise ?? paymentData.amount;
+            const razorpayOrderId = paymentData.razorpayOrderId;
+
+            if (typeof window !== 'undefined' && window.Razorpay && razorpayOrderId && razorpayKey) {
                 const rzp = new window.Razorpay({
-                    key: paymentData.keyId,
-                    amount: paymentData.amount,
+                    key: razorpayKey,
+                    amount: razorpayAmount,
                     currency: paymentData.currency || 'INR',
                     name: 'Nexora Commerce',
                     description: `Order #${orderId.slice(0, 8)}`,
-                    order_id: paymentData.razorpayOrderId,
+                    order_id: razorpayOrderId,
                     handler: async function (response) {
                         await handleVerifyPayment({
                             orderId,
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpayOrderId: response.razorpay_order_id,
                             razorpaySignature: response.razorpay_signature,
-                            guestToken: currentGuestToken,
                         });
                     },
                     modal: {
@@ -155,14 +145,8 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
                 });
                 rzp.open();
             } else {
-                // Direct verification fallback for testing / headless simulation
-                await handleVerifyPayment({
-                    orderId,
-                    razorpayPaymentId: `pay_sim_${Date.now()}`,
-                    razorpayOrderId: paymentData.razorpayOrderId || `order_sim_${Date.now()}`,
-                    razorpaySignature: 'simulated_valid_signature',
-                    guestToken: currentGuestToken,
-                });
+                setServerError('Secure payment checkout could not be loaded. Please refresh and try again.');
+                setPaymentState('PAYMENT_RETRY_AVAILABLE');
             }
         } catch (err) {
             const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment initiation failed.';
@@ -172,7 +156,7 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
     };
 
     // Payment Verification Flow
-    const handleVerifyPayment = useCallback(async ({ orderId, razorpayPaymentId, razorpayOrderId, razorpaySignature, guestToken: gToken }) => {
+    const handleVerifyPayment = useCallback(async ({ orderId, razorpayPaymentId, razorpayOrderId, razorpaySignature }) => {
         try {
             setPaymentState('PAYMENT_RECONCILIATION_PENDING');
             await paymentsApi.verifyPayment({
@@ -180,7 +164,6 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
                 razorpayPaymentId,
                 razorpayOrderId,
                 razorpaySignature,
-                guestToken: gToken,
             });
 
             setPaymentState('PAYMENT_SUCCESS');
@@ -189,7 +172,6 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
             }
             navigate('/orders', {
                 state: {
-                    guestToken: gToken,
                     orderId,
                 },
             });
@@ -209,26 +191,28 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
         try {
             const retryResult = await paymentsApi.retryPayment({
                 orderId: pendingOrder.id,
-                guestToken,
             });
 
             const paymentData = retryResult.data || retryResult;
 
-            if (typeof window !== 'undefined' && window.Razorpay && paymentData.razorpayOrderId) {
+            const razorpayKey = paymentData.razorpayKeyId || paymentData.keyId;
+            const razorpayAmount = paymentData.amountPaise ?? paymentData.amount;
+            const razorpayOrderId = paymentData.razorpayOrderId;
+
+            if (typeof window !== 'undefined' && window.Razorpay && razorpayOrderId && razorpayKey) {
                 const rzp = new window.Razorpay({
-                    key: paymentData.keyId,
-                    amount: paymentData.amount,
+                    key: razorpayKey,
+                    amount: razorpayAmount,
                     currency: paymentData.currency || 'INR',
                     name: 'Nexora Commerce',
                     description: `Order #${pendingOrder.id.slice(0, 8)}`,
-                    order_id: paymentData.razorpayOrderId,
+                    order_id: razorpayOrderId,
                     handler: async function (response) {
                         await handleVerifyPayment({
                             orderId: pendingOrder.id,
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpayOrderId: response.razorpay_order_id,
                             razorpaySignature: response.razorpay_signature,
-                            guestToken,
                         });
                     },
                     modal: {
@@ -240,13 +224,8 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
                 });
                 rzp.open();
             } else {
-                await handleVerifyPayment({
-                    orderId: pendingOrder.id,
-                    razorpayPaymentId: `pay_retry_${Date.now()}`,
-                    razorpayOrderId: paymentData.razorpayOrderId || `order_retry_${Date.now()}`,
-                    razorpaySignature: 'simulated_retry_signature',
-                    guestToken,
-                });
+                setServerError('Secure payment checkout could not be loaded. Please refresh and try again.');
+                setPaymentState('PAYMENT_RETRY_AVAILABLE');
             }
         } catch (err) {
             const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment retry failed.';
@@ -260,6 +239,76 @@ export function CheckoutPage({ cart = [], loadCart, currentUser }) {
         setPaymentState('READY_FOR_PAYMENT');
         setActiveStep(1);
     };
+
+    const handleAuthSuccess = async (user) => {
+        if (onAuthChange) {
+            await onAuthChange(user);
+        }
+        setIsAuthModalOpen(false);
+    };
+
+    if (authLoading) {
+        return (
+            <>
+                <title>Checkout — Nexora</title>
+                <CheckoutHeader cart={cart} />
+                <main className="checkout-main-container" id="checkout-content">
+                    <div className="empty-checkout-card" role="status" aria-live="polite">
+                        <div className="inline-spinner" aria-hidden="true" style={{ margin: '0 auto var(--space-4)' }}></div>
+                        <h1 className="empty-title">Verifying Session</h1>
+                        <p className="empty-description">Please wait while we verify your authentication status.</p>
+                    </div>
+                </main>
+            </>
+        );
+    }
+
+    if (!currentUser) {
+        return (
+            <>
+                <title>Checkout — Nexora</title>
+                <CheckoutHeader cart={cart} />
+                <main className="checkout-main-container" id="checkout-content">
+                    <div className="empty-checkout-card checkout-auth-gate-card">
+                        <h1 className="empty-title">Sign in to continue</h1>
+                        <p className="empty-description">
+                            Create an account or sign in to continue to checkout.
+                        </p>
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
+                            <button
+                                type="button"
+                                className="button-primary"
+                                onClick={() => {
+                                    setAuthMode('login');
+                                    setIsAuthModalOpen(true);
+                                }}
+                            >
+                                Sign In
+                            </button>
+                            <button
+                                type="button"
+                                className="button-secondary"
+                                onClick={() => {
+                                    setAuthMode('register');
+                                    setIsAuthModalOpen(true);
+                                }}
+                            >
+                                Create Account
+                            </button>
+                        </div>
+                    </div>
+                </main>
+
+                <AuthModal
+                    isOpen={isAuthModalOpen}
+                    initialMode={authMode}
+                    onClose={() => setIsAuthModalOpen(false)}
+                    onAuthSuccess={handleAuthSuccess}
+                    subtitle="Create an account or sign in to continue to checkout."
+                />
+            </>
+        );
+    }
 
     const isEmptyCart = !cart || cart.length === 0;
 

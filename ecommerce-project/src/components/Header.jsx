@@ -129,9 +129,11 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
     }
   };
 
-  const handleAuthSuccess = (user) => {
+  const handleAuthSuccess = async (user) => {
     setCurrentUser(user);
-    onAuthChange?.(user);
+    if (onAuthChange) {
+      await onAuthChange(user);
+    }
   };
 
   return (
@@ -171,7 +173,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
               Orders
             </NavLink>
 
-            <NavLink to="/checkout" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`} aria-label={`Shopping cart with ${totalQuantity} items`}>
+            <NavLink to="/cart" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`} aria-label={`Shopping cart with ${totalQuantity} items`}>
               <span>Cart</span>
               <span className="nx-cart-badge">{totalQuantity}</span>
             </NavLink>
@@ -274,7 +276,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
             </NavLink>
 
             <NavLink
-              to="/checkout"
+              to="/cart"
               className="nx-mobile-nav-link"
               onClick={() => setIsMobileMenuOpen(false)}
             >

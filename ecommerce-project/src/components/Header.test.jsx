@@ -25,7 +25,7 @@ describe('Header component', () => {
     authApi.getCurrentUser.mockResolvedValue({ user: null });
   });
 
-  it('renders wordmark, navigation links, and cart badge count', () => {
+  it('renders wordmark, navigation links with /cart target, and cart badge count', async () => {
     const mockCart = [
       { id: '1', quantity: 2 },
       { id: '2', quantity: 3 },
@@ -40,8 +40,17 @@ describe('Header component', () => {
     expect(screen.getByText('NEXORA')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /catalog/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /orders/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/shopping cart with 5 items/i)).toBeInTheDocument();
+    const cartLink = screen.getByLabelText(/shopping cart with 5 items/i);
+    expect(cartLink).toBeInTheDocument();
+    expect(cartLink).toHaveAttribute('href', '/cart');
     expect(screen.getByText('5')).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    const mobileToggle = screen.getByRole('button', { name: /open menu/i });
+    await user.click(mobileToggle);
+    const mobileDrawer = screen.getByRole('dialog', { name: /mobile navigation/i });
+    const mobileCartLink = mobileDrawer.querySelector('a[href="/cart"]');
+    expect(mobileCartLink).toBeInTheDocument();
   });
 
   it('renders sign in button for unauthenticated users and opens auth modal on click', async () => {

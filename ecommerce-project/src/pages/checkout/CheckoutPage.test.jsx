@@ -29,6 +29,15 @@ vi.mock('../../api/cart', () => ({
     },
 }));
 
+vi.mock('../../api/auth', () => ({
+    authApi: {
+        getCurrentUser: vi.fn().mockResolvedValue({ user: null }),
+        login: vi.fn(),
+        register: vi.fn(),
+        logout: vi.fn(),
+    },
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router', async () => {
     const actual = await vi.importActual('react-router');
@@ -39,6 +48,7 @@ vi.mock('react-router', async () => {
 });
 
 describe('CheckoutPage Component (Phase 07.15)', () => {
+    const mockUser = { id: 'u-1', full_name: 'Jane Doe', email: 'jane@example.com' };
     const mockCart = [
         {
             id: 'item-1',
@@ -53,6 +63,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockNavigate.mockReset();
         localStorage.clear();
         sessionStorage.clear();
     });
@@ -60,7 +71,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
     it('renders empty cart state when cart is empty', () => {
         render(
             <MemoryRouter>
-                <CheckoutPage cart={[]} loadCart={vi.fn()} />
+                <CheckoutPage cart={[]} loadCart={vi.fn()} currentUser={mockUser} />
             </MemoryRouter>
         );
 
@@ -71,7 +82,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
     it('renders Step 1 (Address) as active by default with persistent labels', () => {
         render(
             <MemoryRouter>
-                <CheckoutPage cart={mockCart} loadCart={vi.fn()} />
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={mockUser} />
             </MemoryRouter>
         );
 
@@ -88,7 +99,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         const user = userEvent.setup();
         render(
             <MemoryRouter>
-                <CheckoutPage cart={mockCart} loadCart={vi.fn()} />
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={mockUser} />
             </MemoryRouter>
         );
 
@@ -131,19 +142,26 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
 
     it('advances through shipping and review to payment, and completes payment flow', async () => {
         const user = userEvent.setup();
+        const mockOpen = vi.fn();
+        let razorpayOptions = null;
+        window.Razorpay = vi.fn().mockImplementation((options) => {
+            razorpayOptions = options;
+            return { open: mockOpen };
+        });
+
         checkoutApi.initiateCheckout.mockResolvedValue({
             order: {
                 id: 'ord-12345678-abcd',
                 totalPaise: 460000,
                 reservationExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
             },
-            guestToken: 'raw_guest_token_secret_xyz',
         });
 
         paymentsApi.createPaymentOrder.mockResolvedValue({
-            keyId: 'rzp_test_123',
-            amount: 460000,
+            razorpayKeyId: 'rzp_test_123',
+            amountPaise: 460000,
             razorpayOrderId: 'order_rzp_789',
+            currency: 'INR',
         });
 
         paymentsApi.verifyPayment.mockResolvedValue({
@@ -153,7 +171,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
 
         render(
             <MemoryRouter>
-                <CheckoutPage cart={mockCart} loadCart={vi.fn()} />
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={mockUser} />
             </MemoryRouter>
         );
 
@@ -181,7 +199,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         expect(payButton).toBeInTheDocument();
         await user.click(payButton);
 
-        // Verifications
+        // Verifications of checkout and Razorpay initialization
         await waitFor(() => {
             expect(checkoutApi.initiateCheckout).toHaveBeenCalledWith({
                 shippingAddress: {
@@ -196,36 +214,61 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
             });
             expect(paymentsApi.createPaymentOrder).toHaveBeenCalledWith({
                 orderId: 'ord-12345678-abcd',
-                guestToken: 'raw_guest_token_secret_xyz',
             });
-            expect(paymentsApi.verifyPayment).toHaveBeenCalledWith(
+            expect(window.Razorpay).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    orderId: 'ord-12345678-abcd',
-                    guestToken: 'raw_guest_token_secret_xyz',
+                    key: 'rzp_test_123',
+                    amount: 460000,
+                    order_id: 'order_rzp_789',
+                    currency: 'INR',
+                })
+            );
+            expect(mockOpen).toHaveBeenCalled();
+        });
+
+        // Simulate successful payment callback from Razorpay Checkout modal
+        await razorpayOptions.handler({
+            razorpay_payment_id: 'pay_test_real_456',
+            razorpay_order_id: 'order_rzp_789',
+            razorpay_signature: 'auth_test_signature',
+        });
+
+        await waitFor(() => {
+            expect(paymentsApi.verifyPayment).toHaveBeenCalledWith({
+                orderId: 'ord-12345678-abcd',
+                razorpayPaymentId: 'pay_test_real_456',
+                razorpayOrderId: 'order_rzp_789',
+                razorpaySignature: 'auth_test_signature',
+            });
+            // Ensure no simulated payment payload was ever sent
+            expect(paymentsApi.verifyPayment).not.toHaveBeenCalledWith(
+                expect.objectContaining({
+                    razorpayPaymentId: expect.stringMatching(/^pay_sim_/),
                 })
             );
             expect(mockNavigate).toHaveBeenCalledWith('/orders', {
                 state: {
-                    guestToken: 'raw_guest_token_secret_xyz',
                     orderId: 'ord-12345678-abcd',
                 },
             });
         });
-
-        // Verify guestToken was NEVER saved to localStorage or sessionStorage
-        expect(localStorage.getItem('guestToken')).toBeNull();
-        expect(sessionStorage.getItem('guestToken')).toBeNull();
     });
 
     it('handles payment failure and allows non-destructive retry on the SAME order', async () => {
         const user = userEvent.setup();
+        const mockOpen = vi.fn();
+        let retryRazorpayOptions = null;
+        window.Razorpay = vi.fn().mockImplementation((options) => {
+            retryRazorpayOptions = options;
+            return { open: mockOpen };
+        });
+
         checkoutApi.initiateCheckout.mockResolvedValue({
             order: {
                 id: 'ord-retry-test-999',
                 totalPaise: 450000,
                 reservationExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
             },
-            guestToken: 'retry_guest_token',
         });
 
         // First attempt fails during createPaymentOrder
@@ -241,9 +284,10 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
 
         // Retry attempt succeeds
         paymentsApi.retryPayment.mockResolvedValueOnce({
-            keyId: 'rzp_test_123',
-            amount: 450000,
+            razorpayKeyId: 'rzp_test_123',
+            amountPaise: 450000,
             razorpayOrderId: 'order_rzp_retry_456',
+            currency: 'INR',
         });
 
         paymentsApi.verifyPayment.mockResolvedValue({
@@ -253,7 +297,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
 
         render(
             <MemoryRouter>
-                <CheckoutPage cart={mockCart} loadCart={vi.fn()} />
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={mockUser} />
             </MemoryRouter>
         );
 
@@ -285,90 +329,132 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
             // Assert that retryPayment was called with the existing order ID
             expect(paymentsApi.retryPayment).toHaveBeenCalledWith({
                 orderId: 'ord-retry-test-999',
-                guestToken: 'retry_guest_token',
             });
             // Assert initiateCheckout was NOT called a second time
             expect(checkoutApi.initiateCheckout).toHaveBeenCalledTimes(1);
-            expect(paymentsApi.verifyPayment).toHaveBeenCalledWith(
+            expect(window.Razorpay).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    orderId: 'ord-retry-test-999',
-                    guestToken: 'retry_guest_token',
+                    key: 'rzp_test_123',
+                    amount: 450000,
+                    order_id: 'order_rzp_retry_456',
+                    currency: 'INR',
                 })
             );
         });
+
+        // Trigger successful modal callback
+        await retryRazorpayOptions.handler({
+            razorpay_payment_id: 'pay_retry_real_789',
+            razorpay_order_id: 'order_rzp_retry_456',
+            razorpay_signature: 'retry_test_signature',
+        });
+
+        await waitFor(() => {
+            expect(paymentsApi.verifyPayment).toHaveBeenCalledWith({
+                orderId: 'ord-retry-test-999',
+                razorpayPaymentId: 'pay_retry_real_789',
+                razorpayOrderId: 'order_rzp_retry_456',
+                razorpaySignature: 'retry_test_signature',
+            });
+        });
     });
 
-    it('submits items array during guest checkout (currentUser === null) and clears guest cart upon order creation', async () => {
+    it('shows safe user-facing error and avoids simulated verification if Razorpay script is not loaded', async () => {
         const user = userEvent.setup();
-        localStorage.setItem('nexora_guest_cart', JSON.stringify([{ productId: 'prod-1', quantity: 1 }]));
+        delete window.Razorpay;
 
-        checkoutApi.initiateCheckout.mockResolvedValueOnce({
+        checkoutApi.initiateCheckout.mockResolvedValue({
             order: {
-                id: 'ord-guest-test-111',
+                id: 'ord-missing-sdk-111',
                 totalPaise: 450000,
                 reservationExpiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
             },
-            guestToken: 'raw_guest_token_111',
         });
 
-        paymentsApi.createPaymentOrder.mockResolvedValueOnce({
-            keyId: 'rzp_test_123',
-            amount: 450000,
-            razorpayOrderId: 'order_rzp_guest_111',
-        });
-
-        paymentsApi.verifyPayment.mockResolvedValueOnce({
-            success: true,
-            orderId: 'ord-guest-test-111',
+        paymentsApi.createPaymentOrder.mockResolvedValue({
+            razorpayKeyId: 'rzp_test_123',
+            amountPaise: 450000,
+            razorpayOrderId: 'order_rzp_missing_sdk',
+            currency: 'INR',
         });
 
         render(
             <MemoryRouter>
-                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={null} />
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={mockUser} />
             </MemoryRouter>
         );
 
-        // Fill Address
-        await user.type(screen.getByLabelText(/Full Name/i), 'Guest Buyer');
-        await user.type(screen.getByLabelText(/Street Address/i), '456 Guest Lane');
-        await user.type(screen.getByLabelText(/City/i), 'Mumbai');
-        await user.type(screen.getByLabelText(/State/i), 'Maharashtra');
-        await user.type(screen.getByLabelText(/PIN Code/i), '400001');
+        // Advance to step 4
+        await user.type(screen.getByLabelText(/Full Name/i), 'Alex Morgan');
+        await user.type(screen.getByLabelText(/Street Address/i), '123 Residency Road');
+        await user.type(screen.getByLabelText(/City/i), 'Bengaluru');
+        await user.type(screen.getByLabelText(/State/i), 'Karnataka');
+        await user.type(screen.getByLabelText(/PIN Code/i), '560001');
         await user.type(screen.getByLabelText(/Phone Number/i), '9876543210');
         await user.click(screen.getByRole('button', { name: /Continue to Shipping Method/i }));
-
-        // Shipping
         await user.click(screen.getByRole('button', { name: /Continue to Order Review/i }));
-
-        // Review -> Payment
         await user.click(screen.getByRole('button', { name: /Proceed to Payment/i }));
 
-        // Pay
         const payBtn = screen.getByRole('button', { name: /Pay ₹4500\.00 via Razorpay/i });
         await user.click(payBtn);
 
+        // Should present safe user-facing error and not call verifyPayment
         await waitFor(() => {
-            expect(checkoutApi.initiateCheckout).toHaveBeenCalledWith({
-                shippingAddress: {
-                    fullName: 'Guest Buyer',
-                    addressLine1: '456 Guest Lane',
-                    city: 'Mumbai',
-                    state: 'Maharashtra',
-                    pincode: '400001',
-                    phone: '9876543210',
-                },
-                shippingMethod: 'STANDARD',
-                items: [
-                    { productId: 'prod-1', quantity: 1 },
-                ],
-            });
-
-            // Local guest cart must be cleared after successful order creation
-            expect(localStorage.getItem('nexora_guest_cart')).toBeNull();
-            // Guest token must remain memory-only
-            expect(localStorage.getItem('guestToken')).toBeNull();
-            expect(sessionStorage.getItem('guestToken')).toBeNull();
+            expect(screen.getByText('Secure payment checkout could not be loaded. Please refresh and try again.')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Retry Payment/i })).toBeInTheDocument();
         });
+
+        expect(paymentsApi.verifyPayment).not.toHaveBeenCalled();
+    });
+
+    it('renders session verification loading state when authLoading is true and does not classify as guest', () => {
+        render(
+            <MemoryRouter>
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={null} authLoading={true} />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByText('Verifying Session')).toBeInTheDocument();
+        expect(screen.getByText(/Please wait while we verify your authentication status/i)).toBeInTheDocument();
+        expect(screen.queryByText('Sign in to continue')).not.toBeInTheDocument();
+        expect(checkoutApi.initiateCheckout).not.toHaveBeenCalled();
+    });
+
+    it('renders authentication gate when guest directly visits /checkout and blocks checkout initiation', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter>
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={null} authLoading={false} />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByText('Sign in to continue')).toBeInTheDocument();
+        expect(screen.getByText('Create an account or sign in to continue to checkout.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Create Account/i })).toBeInTheDocument();
+
+        // Ensure no checkout or payment APIs were called
+        expect(checkoutApi.initiateCheckout).not.toHaveBeenCalled();
+        expect(paymentsApi.createPaymentOrder).not.toHaveBeenCalled();
+
+        // Clicking Sign In opens modal
+        await user.click(screen.getByRole('button', { name: /Sign In/i }));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('opens registration modal from authentication gate and triggers onAuthChange upon success', async () => {
+        const user = userEvent.setup();
+        const onAuthChangeMock = vi.fn();
+
+        render(
+            <MemoryRouter>
+                <CheckoutPage cart={mockCart} loadCart={vi.fn()} currentUser={null} authLoading={false} onAuthChange={onAuthChangeMock} />
+            </MemoryRouter>
+        );
+
+        await user.click(screen.getByRole('button', { name: /Create Account/i }));
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 });
 

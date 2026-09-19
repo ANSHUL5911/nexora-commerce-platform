@@ -6,12 +6,30 @@ import { updateGuestCartItem, removeGuestCartItem } from '../../api/guestCart.js
 import { formatMoney } from '../../utils/money.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { AuthModal } from '../../components/auth/AuthModal.jsx';
 import './CartPage.css';
 
 export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
   const navigate = useNavigate();
   const [updatingId, setUpdatingId] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const handleProceedToCheckout = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    navigate('/checkout');
+  };
+
+  const handleAuthSuccess = async (user) => {
+    if (onAuthChange) {
+      await onAuthChange(user);
+    }
+    setIsAuthModalOpen(false);
+    navigate('/checkout');
+  };
 
   const handleQuantityChange = async (item, newQty) => {
     const itemId = item.id || item.cartItemId;
@@ -164,7 +182,7 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
               <Button
                 variant="primary"
                 className="cart-checkout-btn"
-                onClick={() => navigate('/checkout')}
+                onClick={handleProceedToCheckout}
               >
                 Proceed to Checkout
               </Button>
@@ -178,6 +196,13 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
           </div>
         )}
       </main>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        subtitle="Create an account or sign in to continue to checkout."
+      />
     </>
   );
 }

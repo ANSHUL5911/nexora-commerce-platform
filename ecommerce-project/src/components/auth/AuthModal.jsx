@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal.jsx';
 import { Input } from '../ui/Input.jsx';
 import { Button } from '../ui/Button.jsx';
 import { authApi } from '../../api/auth.js';
 import './AuthModal.css';
 
-export function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login' }) {
+export function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login', subtitle }) {
   const [mode, setMode] = useState(initialMode); // 'login' or 'register'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,6 +13,12 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
 
   const resetForm = () => {
     setEmail('');
@@ -38,7 +44,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login
         const res = await authApi.login({ email, password });
         setSuccessMsg('Logged in successfully');
         resetForm();
-        onAuthSuccess?.(res?.user);
+        await onAuthSuccess?.(res?.user);
         setTimeout(() => {
           onClose?.();
         }, 500);
@@ -46,7 +52,7 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login
         const res = await authApi.register({ email, password, full_name: fullName });
         setSuccessMsg('Account created successfully');
         resetForm();
-        onAuthSuccess?.(res?.user);
+        await onAuthSuccess?.(res?.user);
         setTimeout(() => {
           onClose?.();
         }, 500);
@@ -65,6 +71,11 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login
       title={mode === 'login' ? 'Account Login' : 'Create Account'}
       maxWidth="440px"
     >
+      {subtitle && (
+        <p className="auth-modal-subtitle" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginBottom: 'var(--space-3)', textAlign: 'center' }}>
+          {subtitle}
+        </p>
+      )}
       <div className="auth-tabs" role="tablist">
         <button
           type="button"
