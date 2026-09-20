@@ -152,6 +152,10 @@ export function adaptOrder(order) {
       phone: order.shipping_phone,
     },
     reservationExpiresAt: order.reservationExpiresAt || order.reservation_expires_at,
+    paymentRecovery: order.paymentRecovery ?? {
+      available: false,
+      reason: (order.orderStatus || order.status || order.order_status) === 'PAID' ? 'ALREADY_SETTLED' : 'RESERVATION_EXPIRED',
+    },
     items,
     itemCount: order.itemCount || items.length,
     guestToken: order.guestToken,

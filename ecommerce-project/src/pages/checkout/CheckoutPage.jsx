@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { CheckoutHeader } from './CheckoutHeader';
 import { ShippingAddressStep } from './ShippingAddressStep';
@@ -10,6 +10,7 @@ import { DEFAULT_DELIVERY_OPTIONS } from './deliveryOptionsData';
 import { checkoutApi } from '../../api/checkout';
 import { paymentsApi } from '../../api/payments';
 import { AuthModal } from '../../components/auth/AuthModal';
+import { openRazorpayCheckout, retryAndPayOrder } from '../../services/paymentOrchestration';
 import './CheckoutPage.css';
 
 export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = false, onAuthChange }) {
@@ -116,38 +117,33 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
             const paymentData = paymentResult.data || paymentResult;
 
             // Step 3: Launch Razorpay Checkout Modal
-            const razorpayKey = paymentData.razorpayKeyId || paymentData.keyId;
-            const razorpayAmount = paymentData.amountPaise ?? paymentData.amount;
-            const razorpayOrderId = paymentData.razorpayOrderId;
-
-            if (typeof window !== 'undefined' && window.Razorpay && razorpayOrderId && razorpayKey) {
-                const rzp = new window.Razorpay({
-                    key: razorpayKey,
-                    amount: razorpayAmount,
-                    currency: paymentData.currency || 'INR',
-                    name: 'Nexora Commerce',
-                    description: `Order #${orderId.slice(0, 8)}`,
-                    order_id: razorpayOrderId,
-                    handler: async function (response) {
-                        await handleVerifyPayment({
+            openRazorpayCheckout({
+                paymentData,
+                orderId,
+                onBeforeVerify: () => {
+                    setPaymentState('PAYMENT_RECONCILIATION_PENDING');
+                },
+                onVerified: async () => {
+                    setPaymentState('PAYMENT_SUCCESS');
+                    if (loadCart) {
+                        await loadCart();
+                    }
+                    navigate('/orders', {
+                        state: {
                             orderId,
-                            razorpayPaymentId: response.razorpay_payment_id,
-                            razorpayOrderId: response.razorpay_order_id,
-                            razorpaySignature: response.razorpay_signature,
-                        });
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            setPaymentState('PAYMENT_FAILED');
-                            setServerError('Payment was dismissed before completion. You can retry payment.');
                         },
-                    },
-                });
-                rzp.open();
-            } else {
-                setServerError('Secure payment checkout could not be loaded. Please refresh and try again.');
-                setPaymentState('PAYMENT_RETRY_AVAILABLE');
-            }
+                    });
+                },
+                onDismiss: () => {
+                    setPaymentState('PAYMENT_FAILED');
+                    setServerError('Payment was dismissed before completion. You can retry payment.');
+                },
+                onError: (err) => {
+                    const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment initiation failed.';
+                    setServerError(msg);
+                    setPaymentState('PAYMENT_RETRY_AVAILABLE');
+                },
+            });
         } catch (err) {
             const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment initiation failed.';
             setServerError(msg);
@@ -155,83 +151,38 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
         }
     };
 
-    // Payment Verification Flow
-    const handleVerifyPayment = useCallback(async ({ orderId, razorpayPaymentId, razorpayOrderId, razorpaySignature }) => {
-        try {
-            setPaymentState('PAYMENT_RECONCILIATION_PENDING');
-            await paymentsApi.verifyPayment({
-                orderId,
-                razorpayPaymentId,
-                razorpayOrderId,
-                razorpaySignature,
-            });
-
-            setPaymentState('PAYMENT_SUCCESS');
-            if (loadCart) {
-                await loadCart();
-            }
-            navigate('/orders', {
-                state: {
-                    orderId,
-                },
-            });
-        } catch (err) {
-            const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment verification failed.';
-            setServerError(msg);
-            setPaymentState('PAYMENT_RETRY_AVAILABLE');
-        }
-    }, [loadCart, navigate]);
-
     // Payment Retry Flow (Against the SAME ecommerce Order)
     const handleRetryPayment = async () => {
         if (!pendingOrder) return;
         setPaymentState('PAYMENT_PROCESSING');
         setServerError('');
 
-        try {
-            const retryResult = await paymentsApi.retryPayment({
-                orderId: pendingOrder.id,
-            });
-
-            const paymentData = retryResult.data || retryResult;
-
-            const razorpayKey = paymentData.razorpayKeyId || paymentData.keyId;
-            const razorpayAmount = paymentData.amountPaise ?? paymentData.amount;
-            const razorpayOrderId = paymentData.razorpayOrderId;
-
-            if (typeof window !== 'undefined' && window.Razorpay && razorpayOrderId && razorpayKey) {
-                const rzp = new window.Razorpay({
-                    key: razorpayKey,
-                    amount: razorpayAmount,
-                    currency: paymentData.currency || 'INR',
-                    name: 'Nexora Commerce',
-                    description: `Order #${pendingOrder.id.slice(0, 8)}`,
-                    order_id: razorpayOrderId,
-                    handler: async function (response) {
-                        await handleVerifyPayment({
-                            orderId: pendingOrder.id,
-                            razorpayPaymentId: response.razorpay_payment_id,
-                            razorpayOrderId: response.razorpay_order_id,
-                            razorpaySignature: response.razorpay_signature,
-                        });
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            setPaymentState('PAYMENT_FAILED');
-                            setServerError('Payment was dismissed. You can retry payment.');
-                        },
+        await retryAndPayOrder({
+            orderId: pendingOrder.id,
+            onBeforeVerify: () => {
+                setPaymentState('PAYMENT_RECONCILIATION_PENDING');
+            },
+            onVerified: async () => {
+                setPaymentState('PAYMENT_SUCCESS');
+                if (loadCart) {
+                    await loadCart();
+                }
+                navigate('/orders', {
+                    state: {
+                        orderId: pendingOrder.id,
                     },
                 });
-                rzp.open();
-            } else {
-                setServerError('Secure payment checkout could not be loaded. Please refresh and try again.');
+            },
+            onDismiss: () => {
+                setPaymentState('PAYMENT_FAILED');
+                setServerError('Payment was dismissed. You can retry payment.');
+            },
+            onError: (err) => {
+                const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment retry failed.';
+                setServerError(msg);
                 setPaymentState('PAYMENT_RETRY_AVAILABLE');
-            }
-        } catch (err) {
-            const msg = err.response?.data?.error?.message || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment retry failed.';
-            setServerError(msg);
-            setPaymentState('PAYMENT_RETRY_AVAILABLE');
-        }
+            },
+        });
     };
 
     const handleRestartCheckout = () => {

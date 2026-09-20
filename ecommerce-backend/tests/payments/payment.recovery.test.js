@@ -295,4 +295,50 @@ describe('Phase 07.10 — Payment Recovery & Ambiguous Gateway Outcome Tests', (
       expect(product.reserved_quantity).toBe(0);
     });
   });
+
+  describe('Test E — Payment Retry Rejection on Expired Inventory Reservation', () => {
+    it('rejects payment retry with HTTP 409 and code RESERVATION_EXPIRED when reservation has expired, creating 0 attempts, 0 gateway calls, and 0 reservations', async () => {
+      const auth = await createAndLoginUser();
+      const product = await createTestProduct({ stockQuantity: 10 });
+      const order = await createTestOrder({
+        userId: auth.user.id,
+        totalCostPaise: 500000,
+        reservationExpiresAt: new Date(Date.now() - 60000), // Expired 1m ago
+      });
+      await createTestOrderItem({ orderId: order.id, productId: product.id });
+      await createTestReservation({
+        orderId: order.id,
+        productId: product.id,
+        expiresAt: new Date(Date.now() - 60000),
+      });
+
+      const gatewaySpy = vi.spyOn(razorpayGateway, 'createOrder');
+
+      const res = await request(app)
+        .post('/api/payments/retry')
+        .set('Cookie', auth.cookieHeader)
+        .set(CSRF_HEADER_NAME, auth.csrfToken)
+        .set('Idempotency-Key', `retry_expired_${crypto.randomUUID()}`)
+        .send({ orderId: order.id });
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('RESERVATION_EXPIRED');
+      expect(res.body.error.message).toBe('Inventory reservation for this order has expired. Please place a new order.');
+
+      // Invariant: Gateway was NEVER called
+      expect(gatewaySpy).not.toHaveBeenCalled();
+
+      // Invariant: Exactly 0 PaymentAttempts were created
+      const attemptsCount = await PaymentAttempt.count({ where: { order_id: order.id } });
+      expect(attemptsCount).toBe(0);
+
+      // Invariant: Exactly 1 Order row exists
+      const ordersCount = await Order.count({ where: { user_id: auth.user.id } });
+      expect(ordersCount).toBe(1);
+
+      // Invariant: Exactly 1 reservation row exists (no new reservation)
+      const reservationsCount = await InventoryReservation.count({ where: { order_id: order.id } });
+      expect(reservationsCount).toBe(1);
+    });
+  });
 });

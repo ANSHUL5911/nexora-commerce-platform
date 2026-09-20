@@ -18,6 +18,7 @@ import {
 import {
   PaymentAttemptNotFoundError,
   OrderNotPayableError,
+  ReservationExpiredError,
   PaymentVerificationError,
   InvalidPaymentSignatureError,
   RazorpayGatewayError,
@@ -129,7 +130,7 @@ export const paymentService = {
       );
 
       if (expiryCheckRows[0]?.is_expired) {
-        throw new OrderNotPayableError(
+        throw new ReservationExpiredError(
           'Inventory reservation for this order has expired. Please place a new order.'
         );
       }

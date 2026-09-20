@@ -27,6 +27,42 @@ export function toOrderItemDTO(item) {
 }
 
 /**
+ * Compute authoritative payment recovery availability for an order.
+ *
+ * @param {import('../../models/Order.js').Order | object} order
+ * @returns {{ available: boolean, reason: 'ACTIVE' | 'RESERVATION_EXPIRED' | 'ALREADY_SETTLED' | 'NOT_PENDING' }}
+ */
+export function getPaymentRecovery(order) {
+  if (!order) {
+    return { available: false, reason: 'NOT_PENDING' };
+  }
+
+  const raw = typeof order.toJSON === 'function' ? order.toJSON() : order;
+  const status = raw.order_status || raw.orderStatus || raw.status;
+
+  if (status !== 'PENDING_PAYMENT') {
+    return {
+      available: false,
+      reason: status === 'PAID' ? 'ALREADY_SETTLED' : 'NOT_PENDING',
+    };
+  }
+
+  const expiresAt = raw.reservation_expires_at || raw.reservationExpiresAt;
+  if (!expiresAt) {
+    return {
+      available: false,
+      reason: 'RESERVATION_EXPIRED',
+    };
+  }
+
+  const isExpired = new Date(expiresAt).getTime() <= Date.now();
+  return {
+    available: !isExpired,
+    reason: isExpired ? 'RESERVATION_EXPIRED' : 'ACTIVE',
+  };
+}
+
+/**
  * Serialize an Order model instance into a comprehensive, sanitized customer DTO.
  *
  * @param {import('../../models/Order.js').Order} order
@@ -61,6 +97,7 @@ export function toOrderDTO(order) {
       phone: order.shipping_phone,
     },
     reservationExpiresAt: order.reservation_expires_at,
+    paymentRecovery: getPaymentRecovery(order),
     items,
     createdAt: order.created_at,
     updatedAt: order.updated_at,
@@ -95,6 +132,7 @@ export function toOrderSummaryDTO(order) {
     totalCostPaise: totalCost,
     itemCount,
     reservationExpiresAt: order.reservation_expires_at,
+    paymentRecovery: getPaymentRecovery(order),
     createdAt: order.created_at,
     updatedAt: order.updated_at,
   };
@@ -104,4 +142,5 @@ export default {
   toOrderItemDTO,
   toOrderDTO,
   toOrderSummaryDTO,
+  getPaymentRecovery,
 };

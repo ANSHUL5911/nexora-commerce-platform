@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getOrderStatusPresentation } from './orderStatus.js';
+import {
+  getOrderStatusPresentation,
+  isOrderPaymentRecoverable,
+  isOrderReservationExpired,
+} from './orderStatus.js';
 
 describe('getOrderStatusPresentation utility', () => {
-  it('correctly maps PENDING_PAYMENT to PAYMENT INITIATED with no tracking and no buy again', () => {
+  it('correctly maps PENDING_PAYMENT to PAYMENT INITIATED with no tracking and no buy again, but allows complete payment', () => {
     const result = getOrderStatusPresentation('PENDING_PAYMENT');
     expect(result).toEqual({
       normalizedStatus: 'PENDING_PAYMENT',
@@ -11,7 +15,8 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: true,
       showBuyAgain: false,
       showTrackPackage: false,
-      primaryAction: null,
+      showCompletePayment: true,
+      primaryAction: 'COMPLETE_PAYMENT',
     });
   });
 
@@ -24,6 +29,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: true,
+      showCompletePayment: false,
       primaryAction: 'TRACK_PACKAGE',
     });
   });
@@ -37,6 +43,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: true,
+      showCompletePayment: false,
       primaryAction: 'TRACK_PACKAGE',
     });
   });
@@ -50,6 +57,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: true,
+      showCompletePayment: false,
       primaryAction: 'TRACK_PACKAGE',
     });
   });
@@ -63,6 +71,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: true,
+      showCompletePayment: false,
       primaryAction: 'BUY_AGAIN',
     });
   });
@@ -76,6 +85,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: false,
+      showCompletePayment: false,
       primaryAction: 'BUY_AGAIN',
     });
   });
@@ -89,6 +99,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: false,
+      showCompletePayment: false,
       primaryAction: 'BUY_AGAIN',
     });
   });
@@ -102,6 +113,7 @@ describe('getOrderStatusPresentation utility', () => {
       isPaymentPending: false,
       showBuyAgain: true,
       showTrackPackage: false,
+      showCompletePayment: false,
       primaryAction: 'BUY_AGAIN',
     });
   });
@@ -123,14 +135,80 @@ describe('getOrderStatusPresentation utility', () => {
     expect(nullRes.canTrack).toBe(false);
     expect(nullRes.showTrackPackage).toBe(false);
     expect(nullRes.showBuyAgain).toBe(false);
+    expect(nullRes.showCompletePayment).toBe(false);
 
     const undefRes = getOrderStatusPresentation(undefined);
     expect(undefRes.headerLabel).toBe('ORDER STATUS');
     expect(undefRes.canTrack).toBe(false);
+    expect(undefRes.showCompletePayment).toBe(false);
 
     const unknownRes = getOrderStatusPresentation('SOMETHING_UNEXPECTED');
     expect(unknownRes.headerLabel).toBe('ORDER STATUS');
     expect(unknownRes.normalizedStatus).toBe('SOMETHING_UNEXPECTED');
     expect(unknownRes.canTrack).toBe(false);
+    expect(unknownRes.showCompletePayment).toBe(false);
+  });
+
+  describe('isOrderPaymentRecoverable & isOrderReservationExpired', () => {
+    it('isOrderPaymentRecoverable returns true ONLY when paymentRecovery.available is strictly true (fails closed when missing)', () => {
+      expect(
+        isOrderPaymentRecoverable({
+          status: 'PENDING_PAYMENT',
+          paymentRecovery: { available: true, reason: 'ACTIVE' },
+        })
+      ).toBe(true);
+
+      expect(
+        isOrderPaymentRecoverable({
+          status: 'PENDING_PAYMENT',
+          paymentRecovery: { available: false, reason: 'RESERVATION_EXPIRED' },
+        })
+      ).toBe(false);
+
+      expect(
+        isOrderPaymentRecoverable({
+          status: 'PAID',
+          paymentRecovery: { available: false, reason: 'ALREADY_SETTLED' },
+        })
+      ).toBe(false);
+
+      // Invariant: Missing paymentRecovery fails closed even for PENDING_PAYMENT
+      expect(
+        isOrderPaymentRecoverable({
+          status: 'PENDING_PAYMENT',
+        })
+      ).toBe(false);
+
+      expect(isOrderPaymentRecoverable({})).toBe(false);
+      expect(isOrderPaymentRecoverable(null)).toBe(false);
+      expect(isOrderPaymentRecoverable(undefined)).toBe(false);
+    });
+
+    it('isOrderReservationExpired returns true strictly when paymentRecovery.reason is RESERVATION_EXPIRED', () => {
+      expect(
+        isOrderReservationExpired({
+          status: 'PENDING_PAYMENT',
+          paymentRecovery: { available: false, reason: 'RESERVATION_EXPIRED' },
+        })
+      ).toBe(true);
+
+      expect(
+        isOrderReservationExpired({
+          status: 'PENDING_PAYMENT',
+          paymentRecovery: { available: true, reason: 'ACTIVE' },
+        })
+      ).toBe(false);
+
+      expect(
+        isOrderReservationExpired({
+          status: 'PENDING_PAYMENT',
+        })
+      ).toBe(false);
+
+      expect(isOrderReservationExpired({ status: 'PAID' })).toBe(false);
+      expect(isOrderReservationExpired({})).toBe(false);
+      expect(isOrderReservationExpired(null)).toBe(false);
+      expect(isOrderReservationExpired(undefined)).toBe(false);
+    });
   });
 });

@@ -5,6 +5,7 @@ import { ordersApi } from '../../api/orders.js';
 import { adaptOrder } from '../../api/adapters.js';
 import { OrdersGrid } from './OrdersGrid.jsx';
 import { Skeleton } from '../../components/ui/Skeleton.jsx';
+import { retryAndPayOrder } from '../../services/paymentOrchestration.js';
 import './OrdersPage.css';
 
 export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
@@ -12,6 +13,8 @@ export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [completingOrderId, setCompletingOrderId] = useState(null);
+  const [paymentErrors, setPaymentErrors] = useState({});
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -49,6 +52,53 @@ export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
       setLoading(false);
     }
   }, [location.state]);
+
+  const handleCompletePayment = useCallback(
+    async (order) => {
+      if (!order?.id || completingOrderId) return;
+
+      setCompletingOrderId(order.id);
+      setPaymentErrors((prev) => ({ ...prev, [order.id]: null }));
+
+      await retryAndPayOrder({
+        orderId: order.id,
+        onVerified: async () => {
+          setCompletingOrderId(null);
+          await fetchOrders();
+          if (loadCart) {
+            await loadCart();
+          }
+        },
+        onDismiss: () => {
+          setCompletingOrderId(null);
+        },
+        onError: async (err) => {
+          setCompletingOrderId(null);
+
+          const errorCode = err?.code || err?.response?.data?.error?.code;
+          const isReservationExpired =
+            errorCode === 'RESERVATION_EXPIRED' ||
+            (err?.response?.status === 409 &&
+              String(err?.message || err?.response?.data?.error?.message || '')
+                .toLowerCase()
+                .includes('reservation'));
+
+          if (isReservationExpired) {
+            await fetchOrders();
+            return;
+          }
+
+          const safeMessage =
+            err?.message || 'Payment retry could not be completed. Please try again.';
+          setPaymentErrors((prev) => ({
+            ...prev,
+            [order.id]: safeMessage,
+          }));
+        },
+      });
+    },
+    [completingOrderId, fetchOrders, loadCart]
+  );
 
   useEffect(() => {
     fetchOrders();
@@ -94,7 +144,14 @@ export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
             ))}
           </div>
         ) : (
-          <OrdersGrid orders={orders} loadCart={loadCart} />
+          <OrdersGrid
+            orders={orders}
+            loadCart={loadCart}
+            onCompletePayment={handleCompletePayment}
+            completingOrderId={completingOrderId}
+            isAnyCompleting={Boolean(completingOrderId)}
+            paymentErrors={paymentErrors}
+          />
         )}
       </main>
     </>

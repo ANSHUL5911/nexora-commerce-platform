@@ -7,8 +7,17 @@ export class PaymentAttemptNotFoundError extends AppError {
 }
 
 export class OrderNotPayableError extends AppError {
-  constructor(message = 'Order is not in a payable state.', details = null) {
-    super(message, 409, 'ORDER_NOT_PAYABLE', details);
+  constructor(message = 'Order is not in a payable state.', details = null, code = 'ORDER_NOT_PAYABLE') {
+    super(message, 409, code, details);
+  }
+}
+
+export class ReservationExpiredError extends OrderNotPayableError {
+  constructor(
+    message = 'Inventory reservation for this order has expired. Please place a new order.',
+    details = null
+  ) {
+    super(message, details, 'RESERVATION_EXPIRED');
   }
 }
 
@@ -57,6 +66,7 @@ export class PaymentConflictError extends AppError {
 export default {
   PaymentAttemptNotFoundError,
   OrderNotPayableError,
+  ReservationExpiredError,
   PaymentVerificationError,
   InvalidPaymentSignatureError,
   WebhookSignatureVerificationError,

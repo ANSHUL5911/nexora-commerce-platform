@@ -6,12 +6,23 @@ import { cartApi } from '../../api/cart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
-import { getOrderStatusPresentation } from '../../utils/orderStatus.js';
+import {
+  getOrderStatusPresentation,
+  isOrderPaymentRecoverable,
+  isOrderReservationExpired,
+} from '../../utils/orderStatus.js';
 
-function OrderHeader({ order }) {
+function OrderHeader({
+  order,
+  onCompletePayment,
+  completingOrderId,
+  isAnyCompleting,
+}) {
   const totalPaise = order.totalPaise ?? order.totalCostPaise ?? order.totalCostCents ?? 0;
   const orderDate = order.createdAt || order.orderTimeMs;
   const presentation = getOrderStatusPresentation(order.status);
+  const isThisOrderCompleting = completingOrderId === order.id;
+  const isPayable = isOrderPaymentRecoverable(order);
 
   return (
     <div className="order-card-header">
@@ -34,9 +45,25 @@ function OrderHeader({ order }) {
         )}
       </div>
 
-      <div className="order-meta-block order-id-block">
-        <span className="order-meta-label">Order ID</span>
-        <span className="order-meta-value" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{order.id}</span>
+      <div className="order-header-actions-group">
+        <div className="order-meta-block order-id-block">
+          <span className="order-meta-label">Order ID</span>
+          <span className="order-meta-value" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{order.id}</span>
+        </div>
+
+        {isPayable && (
+          <Button
+            variant="primary"
+            size="sm"
+            className="complete-payment-button"
+            onClick={() => onCompletePayment && onCompletePayment(order)}
+            loading={isThisOrderCompleting}
+            disabled={isAnyCompleting || isThisOrderCompleting}
+            aria-label="Complete Payment"
+          >
+            {isThisOrderCompleting ? 'Complete Payment...' : 'Complete Payment'}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -122,7 +149,14 @@ function OrderDetailsGrid({ order, loadCart }) {
   );
 }
 
-export function OrdersGrid({ orders = [], loadCart }) {
+export function OrdersGrid({
+  orders = [],
+  loadCart,
+  onCompletePayment,
+  completingOrderId,
+  isAnyCompleting,
+  paymentErrors = {},
+}) {
   if (!orders || orders.length === 0) {
     return (
       <EmptyState
@@ -136,12 +170,51 @@ export function OrdersGrid({ orders = [], loadCart }) {
 
   return (
     <div className="orders-grid">
-      {orders.map((order) => (
-        <article key={order.id} className="order-card">
-          <OrderHeader order={order} />
-          <OrderDetailsGrid order={order} loadCart={loadCart} />
-        </article>
-      ))}
+      {orders.map((order) => {
+        const orderPaymentError = paymentErrors[order.id];
+        const isExpired = isOrderReservationExpired(order);
+
+        return (
+          <article key={order.id} className="order-card">
+            <OrderHeader
+              order={order}
+              onCompletePayment={onCompletePayment}
+              completingOrderId={completingOrderId}
+              isAnyCompleting={isAnyCompleting}
+            />
+            <OrderDetailsGrid order={order} loadCart={loadCart} />
+
+            {isExpired && (
+              <div className="order-expired-recovery-footer" role="status">
+                <div className="order-expired-message-wrap">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="order-expired-icon" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <p className="order-expired-text">Payment window expired. Please place a new order.</p>
+                </div>
+                <Link to="/">
+                  <Button variant="secondary" size="sm" className="place-new-order-button">
+                    Place New Order
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            {orderPaymentError && (
+              <div className="order-payment-alert is-error" role="alert">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <p className="order-payment-alert-text">{orderPaymentError}</p>
+              </div>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 }

@@ -6,7 +6,7 @@
  */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const passwordHash = '$2b$12$K8yQd1v4p7Qp6M9Jz0W9uuG8yP6Qp5M9Jz0W9uuG8yP6Qp5M9Jz0W';
+    const passwordHash = '$2b$12$xntKzYNYHUn1vV6xbP9Ad.wF7KO0t1EqlGxXoDpC6aB1SgvDz6hDy';
 
     const users = [
       {

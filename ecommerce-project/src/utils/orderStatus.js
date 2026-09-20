@@ -17,6 +17,7 @@
  * @property {boolean} isPaymentPending - Whether payment is awaiting capture
  * @property {boolean} showBuyAgain - Whether "Buy Again" action is appropriate
  * @property {boolean} showTrackPackage - Whether "Track Package" action should be rendered
+ * @property {boolean} showCompletePayment - Whether "Complete Payment" action should be rendered
  * @property {string|null} primaryAction - Key identifying the primary user action
  */
 
@@ -38,7 +39,8 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: true,
         showBuyAgain: false,
         showTrackPackage: false,
-        primaryAction: null,
+        showCompletePayment: true,
+        primaryAction: 'COMPLETE_PAYMENT',
       };
 
     case 'PAID':
@@ -49,6 +51,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: true,
+        showCompletePayment: false,
         primaryAction: 'TRACK_PACKAGE',
       };
 
@@ -60,6 +63,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: true,
+        showCompletePayment: false,
         primaryAction: 'TRACK_PACKAGE',
       };
 
@@ -71,6 +75,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: true,
+        showCompletePayment: false,
         primaryAction: 'TRACK_PACKAGE',
       };
 
@@ -82,6 +87,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: true,
+        showCompletePayment: false,
         primaryAction: 'BUY_AGAIN',
       };
 
@@ -93,6 +99,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: false,
+        showCompletePayment: false,
         primaryAction: 'BUY_AGAIN',
       };
 
@@ -104,6 +111,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: false,
+        showCompletePayment: false,
         primaryAction: 'BUY_AGAIN',
       };
 
@@ -115,6 +123,7 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: true,
         showTrackPackage: false,
+        showCompletePayment: false,
         primaryAction: 'BUY_AGAIN',
       };
 
@@ -126,11 +135,37 @@ export function getOrderStatusPresentation(rawStatus) {
         isPaymentPending: false,
         showBuyAgain: false,
         showTrackPackage: false,
+        showCompletePayment: false,
         primaryAction: null,
       };
   }
 }
 
+/**
+ * Determines whether an order is eligible for payment recovery.
+ * Backend paymentRecovery object is the authoritative source of truth.
+ * Fails closed if paymentRecovery is missing or unavailable.
+ *
+ * @param {object} order
+ * @returns {boolean}
+ */
+export function isOrderPaymentRecoverable(order) {
+  return order?.paymentRecovery?.available === true;
+}
+
+/**
+ * Determines whether a pending order's reservation is known to be expired.
+ * Backend paymentRecovery object is the authoritative source of truth.
+ *
+ * @param {object} order
+ * @returns {boolean}
+ */
+export function isOrderReservationExpired(order) {
+  return order?.paymentRecovery?.reason === 'RESERVATION_EXPIRED';
+}
+
 export default {
   getOrderStatusPresentation,
+  isOrderPaymentRecoverable,
+  isOrderReservationExpired,
 };

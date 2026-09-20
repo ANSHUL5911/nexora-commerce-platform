@@ -273,5 +273,49 @@ describe('Phase 07.7 — Order & OrderItem Model & DTO Unit Tests', () => {
       expect(summaryDTO.totalPaise).toBe(500000);
       expect(summaryDTO.subtotalPaise).toBe(500000);
     });
+
+    it('toOrderDTO exposes paymentRecovery object with authoritative status and reason', () => {
+      const activeOrder = {
+        id: 'ord-active-1',
+        user_id: 'usr-1',
+        order_status: 'PENDING_PAYMENT',
+        total_cost_paise: 200000,
+        reservation_expires_at: new Date(Date.now() + 15 * 60 * 1000),
+        items: [],
+      };
+      const activeDTO = toOrderDTO(activeOrder);
+      expect(activeDTO.paymentRecovery).toEqual({
+        available: true,
+        reason: 'ACTIVE',
+      });
+
+      const expiredOrder = {
+        id: 'ord-expired-1',
+        user_id: 'usr-1',
+        order_status: 'PENDING_PAYMENT',
+        total_cost_paise: 200000,
+        reservation_expires_at: new Date(Date.now() - 1000),
+        items: [],
+      };
+      const expiredDTO = toOrderDTO(expiredOrder);
+      expect(expiredDTO.paymentRecovery).toEqual({
+        available: false,
+        reason: 'RESERVATION_EXPIRED',
+      });
+
+      const paidOrder = {
+        id: 'ord-paid-1',
+        user_id: 'usr-1',
+        order_status: 'PAID',
+        total_cost_paise: 200000,
+        reservation_expires_at: new Date(Date.now() + 15 * 60 * 1000),
+        items: [],
+      };
+      const paidDTO = toOrderDTO(paidOrder);
+      expect(paidDTO.paymentRecovery).toEqual({
+        available: false,
+        reason: 'ALREADY_SETTLED',
+      });
+    });
   });
 });

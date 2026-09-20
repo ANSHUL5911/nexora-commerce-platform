@@ -80,8 +80,11 @@
   font-weight: 600;
 }
 
-.order-id-block {
-  text-align: right;
+.order-header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
 }
 
 @media (max-width: 640px) {
@@ -91,6 +94,10 @@
   }
   .order-id-block {
     text-align: left;
+  }
+  .order-header-actions-group {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
@@ -172,4 +179,63 @@
     flex-direction: row;
     width: 100%;
   }
+}
+
+.complete-payment-button {
+  min-width: 160px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.order-expired-recovery-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  background-color: var(--color-surface-subtle);
+  border-top: 1px solid var(--color-border-subtle);
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.order-expired-message-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.order-expired-icon {
+  flex-shrink: 0;
+  color: #D97706;
+}
+
+.order-expired-text {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.place-new-order-button {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.order-payment-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6);
+  background-color: var(--color-status-error-bg);
+  border-top: 1px solid #FECACA;
+  color: var(--color-status-error);
+  font-size: var(--text-sm);
+}
+
+.order-payment-alert-text {
+  margin: 0;
+  font-weight: 500;
 }
