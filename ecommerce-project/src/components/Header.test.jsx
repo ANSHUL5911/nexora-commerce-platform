@@ -90,4 +90,87 @@ describe('Header component', () => {
     expect(screen.getByText('anshul@example.com')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
   });
+
+  it('renders Admin navigation link in desktop and mobile only when currentUser.role is admin', async () => {
+    const adminUser = {
+      id: 'a1',
+      full_name: 'Admin User',
+      email: 'admin@nexora.local',
+      role: 'admin',
+    };
+
+    render(
+      <MemoryRouter>
+        <Header cart={[]} currentUser={adminUser} />
+      </MemoryRouter>
+    );
+
+    // Desktop link
+    const adminLinks = screen.getAllByRole('link', { name: /admin/i });
+    expect(adminLinks.length).toBeGreaterThanOrEqual(1);
+    expect(adminLinks[0]).toHaveAttribute('href', '/admin');
+
+    // Dropdown contains Admin Dashboard
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /admin/i }));
+    expect(screen.getByRole('menuitem', { name: /admin dashboard/i })).toBeInTheDocument();
+  });
+
+  it('does NOT render Admin navigation links when currentUser.role is customer or guest', () => {
+    const customerUser = {
+      id: 'c1',
+      full_name: 'Customer User',
+      email: 'customer@nexora.local',
+      role: 'customer',
+    };
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <Header cart={[]} currentUser={customerUser} />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('link', { name: /^admin$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /admin dashboard/i })).not.toBeInTheDocument();
+
+    // Guest / Unauthenticated
+    rerender(
+      <MemoryRouter>
+        <Header cart={[]} currentUser={null} />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('link', { name: /^admin$/i })).not.toBeInTheDocument();
+  });
+
+  it('navigates to /admin after successful admin login', async () => {
+    const user = userEvent.setup();
+    const adminUser = {
+      id: 'a1',
+      full_name: 'Admin User',
+      email: 'admin@nexora.local',
+      role: 'admin',
+    };
+    authApi.login.mockResolvedValueOnce({ user: adminUser });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Header cart={[]} />
+      </MemoryRouter>
+    );
+
+    // Open login modal
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(screen.getByRole('dialog', { name: /account login/i })).toBeInTheDocument();
+
+    // Submit form
+    await user.type(screen.getByLabelText(/email address/i), 'admin@nexora.local');
+    await user.type(screen.getByLabelText(/password/i), 'AdminSecurePassword123!');
+    await user.click(screen.getByRole('button', { name: /sign in to nexora/i }));
+
+    expect(authApi.login).toHaveBeenCalledWith({
+      email: 'admin@nexora.local',
+      password: 'AdminSecurePassword123!',
+    });
+  });
 });

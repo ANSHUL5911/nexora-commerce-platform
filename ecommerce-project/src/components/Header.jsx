@@ -134,6 +134,9 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
     if (onAuthChange) {
       await onAuthChange(user);
     }
+    if (user?.role === 'admin') {
+      navigate('/admin');
+    }
   };
 
   return (
@@ -178,6 +181,12 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
               <span className="nx-cart-badge">{totalQuantity}</span>
             </NavLink>
 
+            {currentUser?.role === 'admin' && (
+              <NavLink to="/admin" className={({ isActive }) => `nx-nav-link nx-admin-link ${isActive ? 'active' : ''}`}>
+                Admin
+              </NavLink>
+            )}
+
             {/* Account / Authentication Trigger */}
             {currentUser ? (
               <div className="nx-user-menu">
@@ -201,6 +210,16 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
                       <div className="nx-user-name">{currentUser.full_name}</div>
                       <div className="nx-user-email">{currentUser.email}</div>
                     </div>
+                    {currentUser.role === 'admin' && (
+                      <NavLink
+                        to="/admin"
+                        className="nx-dropdown-item nx-dropdown-admin-item"
+                        role="menuitem"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                      >
+                        Admin Dashboard
+                      </NavLink>
+                    )}
                     <button
                       type="button"
                       className="nx-dropdown-item"
@@ -283,6 +302,16 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
               <span>Cart</span>
               <span className="nx-cart-badge">{totalQuantity}</span>
             </NavLink>
+
+            {currentUser?.role === 'admin' && (
+              <NavLink
+                to="/admin"
+                className="nx-mobile-nav-link nx-admin-link"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span>Admin Dashboard</span>
+              </NavLink>
+            )}
 
             {currentUser ? (
               <div style={{ paddingTop: 'var(--space-4)' }}>

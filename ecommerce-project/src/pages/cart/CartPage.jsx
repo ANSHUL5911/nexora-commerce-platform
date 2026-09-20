@@ -28,7 +28,11 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
       await onAuthChange(user);
     }
     setIsAuthModalOpen(false);
-    navigate('/checkout');
+    if (user?.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/checkout');
+    }
   };
 
   const handleQuantityChange = async (item, newQty) => {

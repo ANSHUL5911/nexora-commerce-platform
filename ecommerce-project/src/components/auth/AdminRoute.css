@@ -1,0 +1,75 @@
+.nx-admin-loading-screen,
+.nx-admin-denied-screen {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background-color: var(--color-canvas);
+}
+
+.nx-admin-loading-card,
+.nx-admin-denied-card {
+  max-width: 480px;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.nx-admin-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border-subtle);
+  border-top-color: var(--color-accent-primary);
+  border-radius: 50%;
+  animation: nx-spin 0.8s linear infinite;
+  margin: 0 auto var(--space-4);
+}
+
+@keyframes nx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.nx-admin-loading-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.nx-admin-loading-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.nx-admin-denied-icon {
+  color: var(--color-status-error);
+  margin-bottom: var(--space-4);
+}
+
+.nx-admin-denied-title {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.nx-admin-denied-message {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-6);
+}
+
+.nx-admin-denied-actions {
+  display: flex;
+  justify-content: center;
+}

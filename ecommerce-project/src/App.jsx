@@ -14,6 +14,8 @@ import { OrdersPage } from './pages/orders/OrdersPage.jsx';
 import { TrackingPage } from './pages/TrackingPage.jsx';
 import { PaymentPage } from './pages/payment/PaymentPage.jsx';
 import { NotFoundPage } from './pages/not_found/NotFoundPage.jsx';
+import { AdminRoute } from './components/auth/AdminRoute.jsx';
+import { AdminPage } from './pages/admin/AdminPage.jsx';
 
 function App() {
   const [cart, setCart] = useState([]);
@@ -202,6 +204,28 @@ function App() {
             cartMeta={cartMeta}
             loadCart={loadCart}
           />
+        }
+      />
+      <Route
+        path="admin"
+        element={
+          <AdminRoute currentUser={currentUser} authLoading={authLoading}>
+            <AdminPage
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="admin/*"
+        element={
+          <AdminRoute currentUser={currentUser} authLoading={authLoading}>
+            <AdminPage
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </AdminRoute>
         }
       />
       <Route

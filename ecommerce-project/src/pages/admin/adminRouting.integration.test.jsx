@@ -1,0 +1,119 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import App from '../../App.jsx';
+import { authApi } from '../../api/auth.js';
+
+vi.mock('../../api/auth.js', () => ({
+  authApi: {
+    getCurrentUser: vi.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+    register: vi.fn(),
+  },
+}));
+
+vi.mock('../../api/cart.js', () => ({
+  cartApi: {
+    getCart: vi.fn().mockResolvedValue({ cart: { items: [], subtotal_paise: 0, total_quantity: 0 } }),
+    addItem: vi.fn(),
+    updateItem: vi.fn(),
+    removeItem: vi.fn(),
+    clearCart: vi.fn(),
+  },
+}));
+
+vi.mock('../../api/products.js', () => ({
+  productsApi: {
+    listProducts: vi.fn().mockResolvedValue({ products: [], pagination: {} }),
+    getProductById: vi.fn().mockResolvedValue({ product: {} }),
+  },
+}));
+
+describe('Admin Routing & Session Integration (Phase 07.26)', () => {
+  const adminUser = {
+    id: 'a0000000-0000-4000-8000-000000000001',
+    email: 'admin@nexora.local',
+    full_name: 'Nexora System Administrator',
+    role: 'admin',
+    is_active: true,
+  };
+
+  const customerUser = {
+    id: 'c0000000-0000-4000-8000-000000000002',
+    email: 'customer@nexora.local',
+    full_name: 'Customer User',
+    role: 'customer',
+    is_active: true,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders AdminPage when admin accesses /admin and session resolves with role admin', async () => {
+    authApi.getCurrentUser.mockResolvedValueOnce({ user: adminUser });
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    // Initial loading screen while verifying session
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.getByText(/validating administrative authorization/i)).toBeInTheDocument();
+
+    // After session resolution, AdminPage renders
+    expect(await screen.findByRole('heading', { level: 1, name: /nexora admin/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/Nexora System Administrator/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/admin/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('denies access with 403 Access Denied when customer user navigates to /admin', async () => {
+    authApi.getCurrentUser.mockResolvedValueOnce({ user: customerUser });
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: /access denied/i })).toBeInTheDocument();
+    expect(screen.getByText(/administrator privileges are required/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: /nexora admin/i })).not.toBeInTheDocument();
+  });
+
+  it('redirects unauthenticated visitor on /admin to storefront catalog', async () => {
+    authApi.getCurrentUser.mockResolvedValueOnce({ user: null });
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    // After auth check reveals no session, user is redirected to "/"
+    await waitFor(() => {
+      expect(screen.queryByText(/validating administrative authorization/i)).not.toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('heading', { level: 1, name: /nexora admin/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /access denied/i })).not.toBeInTheDocument();
+  });
+
+  it('preserves the admin experience on page refresh on /admin after session restoration', async () => {
+    // Simulates direct URL navigation / browser refresh
+    authApi.getCurrentUser.mockResolvedValueOnce({ user: adminUser });
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    // Verifies transition from loading -> authenticated admin interface without redirect loop
+    expect(screen.getByText(/validating administrative authorization/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /nexora admin/i })).toBeInTheDocument();
+  });
+});

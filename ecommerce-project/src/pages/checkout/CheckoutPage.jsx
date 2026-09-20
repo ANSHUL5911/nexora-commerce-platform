@@ -196,6 +196,9 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
             await onAuthChange(user);
         }
         setIsAuthModalOpen(false);
+        if (user?.role === 'admin') {
+            navigate('/admin');
+        }
     };
 
     if (authLoading) {
