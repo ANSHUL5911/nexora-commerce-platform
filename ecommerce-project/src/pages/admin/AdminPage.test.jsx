@@ -11,7 +11,85 @@ vi.mock('../../api/auth.js', () => ({
   },
 }));
 
-describe('AdminPage Component (Phase 07.26)', () => {
+vi.mock('../../api/admin.js', () => ({
+  adminApi: {
+    listProducts: vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'p-1',
+          name: 'Handcrafted Oxford',
+          category: 'Footwear',
+          pricePaise: 1850000,
+          stockQuantity: 12,
+          reservedQuantity: 2,
+          availableQuantity: 10,
+          isDeleted: false,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 24, totalPages: 3 },
+    }),
+    getInventory: vi.fn().mockResolvedValue({
+      data: [
+        {
+          productId: 'p-low-1',
+          name: 'Derby Suede Boot',
+          category: 'Footwear',
+          stockQuantity: 4,
+          reservedQuantity: 1,
+          availableQuantity: 3,
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 3, totalPages: 1 },
+    }),
+    listOrders: vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'o0000000-0000-4000-8000-000000000001',
+          customer: { fullName: 'Jane Doe', email: 'jane@example.com' },
+          itemCount: 2,
+          totalCostPaise: 3700000,
+          orderStatus: 'PAID',
+          paymentStatus: 'SUCCESS',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 42, totalPages: 5 },
+    }),
+    listAuditLogs: vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'audit-1',
+          action: 'ADMIN_CREATE_PRODUCT',
+          actor: { email: 'admin@nexora.local' },
+          targetResource: 'products',
+          resourceId: 'p-1',
+          ipAddress: '127.0.0.1',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 15, totalPages: 2 },
+    }),
+    getOrder: vi.fn().mockResolvedValue({
+      data: {
+        id: 'o0000000-0000-4000-8000-000000000001',
+        orderStatus: 'PAID',
+        totalCostPaise: 3700000,
+        subtotalPaise: 3700000,
+        shippingFeePaise: 0,
+        shippingAddress: { fullName: 'Jane Doe', addressLine1: '123 Main St', city: 'Mumbai', state: 'MH', pincode: '400001' },
+        items: [],
+        paymentAttempts: [],
+        restockLogs: [],
+        isRefundEligible: true,
+        isRestockEligible: false,
+      },
+    }),
+  },
+}));
+
+describe('AdminPage Component — Nexora Commerce Operations Console (Phase 07.26B)', () => {
   const adminUser = {
     id: 'a0000000-0000-4000-8000-000000000001',
     email: 'admin@nexora.local',
@@ -24,9 +102,9 @@ describe('AdminPage Component (Phase 07.26)', () => {
     vi.clearAllMocks();
   });
 
-  it('renders Nexora Admin heading, admin full name, role, and Storefront link', () => {
+  it('renders Nexora Admin heading, admin full name, role, and navigation tabs', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/admin']}>
         <AdminPage currentUser={adminUser} onAuthChange={vi.fn()} />
       </MemoryRouter>
     );
@@ -35,20 +113,72 @@ describe('AdminPage Component (Phase 07.26)', () => {
     expect(screen.getAllByText(/Nexora System Administrator/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/admin/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('link', { name: /return to storefront catalog/i })).toHaveAttribute('href', '/');
+
+    // Navigation tabs
+    expect(screen.getByRole('button', { name: /^overview$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^orders$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^inventory$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^products$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^audit logs$/i })).toBeInTheDocument();
   });
 
-  it('renders system and authorization overview section with verified metadata', () => {
+  it('renders Commerce Operations Overview with authoritative backend-derived metrics', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/admin']}>
         <AdminPage currentUser={adminUser} onAuthChange={vi.fn()} />
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { level: 2, name: /system & authorization overview/i })).toBeInTheDocument();
-    expect(screen.getByText('admin@nexora.local')).toBeInTheDocument();
-    expect(screen.getByText('a0000000-0000-4000-8000-000000000001')).toBeInTheDocument();
-    expect(screen.getByText(/backend session cookie \(httponly\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/backend router requireadmin rbac/i)).toBeInTheDocument();
+    // Overview headings
+    expect(await screen.findByRole('heading', { level: 2, name: /commerce operations/i })).toBeInTheDocument();
+    expect(screen.getByText(/total products/i)).toBeInTheDocument();
+    expect(screen.getAllByText('24').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('42')).toBeInTheDocument(); // total orders
+    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1); // low stock count
+
+    // Recent orders table
+    expect(screen.getByRole('heading', { level: 2, name: /recent orders/i })).toBeInTheDocument();
+    expect(screen.getByText(/Jane Doe/i)).toBeInTheDocument();
+
+    // Low stock attention table
+    expect(screen.getByRole('heading', { level: 2, name: /low-stock attention/i })).toBeInTheDocument();
+    expect(screen.getByText(/Derby Suede Boot/i)).toBeInTheDocument();
+  });
+
+  it('switches between administrative sections when tabs are clicked', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <Routes>
+          <Route path="/admin/*" element={<AdminPage currentUser={adminUser} onAuthChange={vi.fn()} />} />
+          <Route path="/admin" element={<AdminPage currentUser={adminUser} onAuthChange={vi.fn()} />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Initial view: Overview
+    expect(await screen.findByRole('heading', { level: 2, name: /commerce operations/i })).toBeInTheDocument();
+
+    // Navigate to Orders
+    const ordersTab = screen.getByRole('button', { name: /^orders$/i });
+    await user.click(ordersTab);
+    expect(await screen.findByRole('heading', { level: 2, name: /order management/i })).toBeInTheDocument();
+
+    // Navigate to Inventory
+    const inventoryTab = screen.getByRole('button', { name: /^inventory$/i });
+    await user.click(inventoryTab);
+    expect(await screen.findByRole('heading', { level: 2, name: /inventory operations/i })).toBeInTheDocument();
+
+    // Navigate to Products
+    const productsTab = screen.getByRole('button', { name: /^products$/i });
+    await user.click(productsTab);
+    expect(await screen.findByRole('heading', { level: 2, name: /catalog management/i })).toBeInTheDocument();
+
+    // Navigate to Audit Logs
+    const auditTab = screen.getByRole('button', { name: /^audit logs$/i });
+    await user.click(auditTab);
+    expect(await screen.findByRole('heading', { level: 2, name: /operational audit trail/i })).toBeInTheDocument();
   });
 
   it('handles sign out by calling authApi.logout, onAuthChange(null), and navigating to storefront', async () => {

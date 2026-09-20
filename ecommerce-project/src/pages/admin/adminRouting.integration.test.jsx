@@ -30,6 +30,15 @@ vi.mock('../../api/products.js', () => ({
   },
 }));
 
+vi.mock('../../api/admin.js', () => ({
+  adminApi: {
+    listProducts: vi.fn().mockResolvedValue({ data: [], pagination: { total: 0, totalPages: 1 } }),
+    getInventory: vi.fn().mockResolvedValue({ data: [], pagination: { total: 0, totalPages: 1 } }),
+    listOrders: vi.fn().mockResolvedValue({ data: [], pagination: { total: 0, totalPages: 1 } }),
+    listAuditLogs: vi.fn().mockResolvedValue({ data: [], pagination: { total: 0, totalPages: 1 } }),
+  },
+}));
+
 describe('Admin Routing & Session Integration (Phase 07.26)', () => {
   const adminUser = {
     id: 'a0000000-0000-4000-8000-000000000001',
