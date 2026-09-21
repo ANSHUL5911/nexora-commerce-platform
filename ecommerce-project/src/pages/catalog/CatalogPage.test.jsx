@@ -98,7 +98,7 @@ describe('CatalogPage component', () => {
       });
     });
 
-    const apparelTab = screen.getByRole('button', { name: /^apparel$/i });
+    const apparelTab = screen.getByRole('tab', { name: /^apparel$/i });
     fireEvent.click(apparelTab);
 
     await waitFor(() => {
@@ -125,8 +125,8 @@ describe('CatalogPage component', () => {
       });
     });
 
-    const apparelTab = screen.getByRole('button', { name: /^apparel$/i });
-    expect(apparelTab).toHaveClass('active');
+    const apparelTab = screen.getByRole('tab', { name: /^apparel$/i });
+    expect(apparelTab).toHaveAttribute('aria-selected', 'true');
   });
 
   it('handles search query parameter correctly', async () => {
@@ -207,7 +207,7 @@ describe('CatalogPage component', () => {
       });
     });
 
-    const apparelTab = screen.getByRole('button', { name: /^apparel$/i });
-    expect(apparelTab).toHaveClass('active');
+    const apparelTab = screen.getByRole('tab', { name: /^apparel$/i });
+    expect(apparelTab).toHaveAttribute('aria-selected', 'true');
   });
 });

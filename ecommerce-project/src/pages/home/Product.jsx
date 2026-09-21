@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { motion } from 'motion/react';
 import { formatMoney } from '../../utils/money.js';
 import { cartApi } from '../../api/cart.js';
 import { addGuestCartItem } from '../../api/guestCart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
-import { normalizeProductImage, handleImageError } from '../../utils/media.js';
+import { SafeImage } from '../../components/ui/SafeImage.jsx';
+import { StarRating } from '../../components/ui/StarRating.jsx';
+import { springs, useReducedMotion } from '../../lib/motion.js';
 
 export function Product({ product, loadCart, currentUser }) {
+  const shouldReduceMotion = useReducedMotion();
   const availableQty = product.available_quantity ?? product.availableQuantity;
   const isAvailableDefined = availableQty !== undefined && availableQty !== null;
   const maxSelectable = isAvailableDefined ? Math.min(10, Math.max(0, availableQty)) : 10;
@@ -24,13 +28,14 @@ export function Product({ product, loadCart, currentUser }) {
     try {
       setLoading(true);
       setErrorMsg(null);
+      const qty = Number(quantity);
 
       if (currentUser === null) {
-        addGuestCartItem(product.id, quantity, availableQty, product);
+        addGuestCartItem(product.id, qty, availableQty, product);
       } else {
         await cartApi.addItem({
           productId: product.id,
-          quantity,
+          quantity: qty,
         });
       }
 
@@ -40,16 +45,15 @@ export function Product({ product, loadCart, currentUser }) {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (err) {
-      setErrorMsg(err?.message || 'Failed to add item');
-      setTimeout(() => setErrorMsg(null), 3000);
+      console.error('Failed to add to cart:', err);
+      setErrorMsg(err?.message || 'Failed to add item to cart');
     } finally {
       setLoading(false);
     }
   };
 
   const selectQuantity = (e) => {
-    const quantitySelected = Number(e.target.value);
-    setQuantity(quantitySelected);
+    setQuantity(Number(e.target.value));
   };
 
   const ratingStars = product.rating?.stars ?? 4.5;
@@ -65,14 +69,23 @@ export function Product({ product, loadCart, currentUser }) {
         className="product-card-image-wrap"
         aria-label={`View ${product.name}`}
       >
-        <img
-          className="product-card-image"
-          data-testid="product-image"
-          src={normalizeProductImage(product.image || product.imageUrl, category)}
-          alt={product.name}
-          loading="lazy"
-          onError={(e) => handleImageError(e, category)}
-        />
+        <motion.div
+          layoutId={shouldReduceMotion ? undefined : `product-image-${product.id}`}
+          transition={springs.specimenMorph}
+          style={{ width: '100%', height: '100%', display: 'contents' }}
+        >
+          <SafeImage
+            className="product-card-image"
+            data-testid="product-image"
+            src={product.image || product.imageUrl}
+            category={category}
+            alt={product.name}
+            width={320}
+            height={400}
+            loading="lazy"
+            decoding="async"
+          />
+        </motion.div>
       </Link>
 
       {/* Product Content */}
@@ -95,15 +108,16 @@ export function Product({ product, loadCart, currentUser }) {
           </Link>
         </h3>
 
-        {/* Rating Metadata (Hidden / subtle test-accessible) */}
-        <div className="product-rating-container" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-          <img
-            className="product-rating-stars"
+        {/* Rating Metadata with crisp vector SVG stars */}
+        <div className="product-rating-container" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+          <span
             data-testid="product-rating-stars-image"
             src={`images/ratings/rating-${Math.round(ratingStars * 10)}.png`}
-            alt={`${ratingStars} stars`}
-            style={{ height: '14px', width: 'auto' }}
-          />
+            aria-label={`${ratingStars} stars`}
+            style={{ display: 'inline-flex', alignItems: 'center' }}
+          >
+            <StarRating rating={ratingStars} size={13} />
+          </span>
           <span className="product-rating-count" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
             {ratingCount}
           </span>

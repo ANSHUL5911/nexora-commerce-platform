@@ -6,6 +6,8 @@ import { cartApi } from '../../api/cart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
+import { Icon } from '../../components/ui/Icon.jsx';
+import { SafeImage } from '../../components/ui/SafeImage.jsx';
 import {
   getOrderStatusPresentation,
   isOrderPaymentRecoverable,
@@ -25,30 +27,38 @@ function OrderHeader({
   const isPayable = isOrderPaymentRecoverable(order);
 
   return (
-    <div className="order-card-header">
-      <div className="order-header-meta-group">
-        <div className="order-meta-block">
-          <span className="order-meta-label">{presentation.headerLabel}</span>
-          <span className="order-meta-value">{orderDate ? dayjs(orderDate).format('MMMM D, YYYY') : 'Recent'}</span>
+    <div className="order-card-header order-header-row">
+      <div className="order-header-meta-group order-header-left">
+        <div className="order-meta-block order-header-col">
+          <span className="order-meta-label order-header-label">{presentation.headerLabel}</span>
+          <span className="order-meta-value order-header-value">
+            {orderDate ? dayjs(orderDate).format('MMMM D, YYYY') : 'Recent'}
+          </span>
         </div>
 
-        <div className="order-meta-block">
-          <span className="order-meta-label">Total</span>
+        <div className="order-meta-block order-header-col">
+          <span className="order-meta-label order-header-label">Total</span>
           <span className="order-meta-value price-val">{formatMoney(totalPaise)}</span>
         </div>
 
         {order.status && (
-          <div className="order-meta-block">
-            <span className="order-meta-label">Status</span>
-            <div><Badge status={presentation.normalizedStatus}>{presentation.normalizedStatus}</Badge></div>
+          <div className="order-meta-block order-header-col">
+            <span className="order-meta-label order-header-label">Status</span>
+            <div>
+              <Badge status={presentation.normalizedStatus}>
+                {presentation.normalizedStatus}
+              </Badge>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="order-header-actions-group">
-        <div className="order-meta-block order-id-block">
-          <span className="order-meta-label">Order ID</span>
-          <span className="order-meta-value" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{order.id}</span>
+      <div className="order-header-actions-group order-header-right">
+        <div className="order-meta-block order-id-block order-header-col">
+          <span className="order-meta-label order-header-label">Order ID</span>
+          <span className="order-meta-value order-id-mono" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+            {order.id}
+          </span>
         </div>
 
         {isPayable && (
@@ -70,9 +80,9 @@ function OrderHeader({
 }
 
 function OrderDetailsGrid({ order, loadCart }) {
-  const items = order.items || order.products || [];
   const [addingId, setAddingId] = useState(null);
   const [addedId, setAddedId] = useState(null);
+  const items = order.items || order.products || [];
   const presentation = getOrderStatusPresentation(order.status);
   const hasActions = presentation.showBuyAgain || presentation.showTrackPackage;
 
@@ -80,10 +90,7 @@ function OrderDetailsGrid({ order, loadCart }) {
     if (!productId) return;
     try {
       setAddingId(productId);
-      await cartApi.addItem({
-        productId,
-        quantity: 1,
-      });
+      await cartApi.addItem({ productId, quantity: 1 });
       if (loadCart) {
         await loadCart();
       }
@@ -108,7 +115,14 @@ function OrderDetailsGrid({ order, loadCart }) {
         return (
           <div key={itemKey} className="order-item-row">
             <div className="order-item-thumb-wrap">
-              <img src={productImage} alt={productName} className="order-item-thumb" />
+              <SafeImage
+                src={productImage}
+                alt={productName}
+                width={80}
+                height={100}
+                className="order-item-thumb"
+                normalize={false}
+              />
             </div>
 
             <div className="order-item-info">
@@ -160,6 +174,7 @@ export function OrdersGrid({
   if (!orders || orders.length === 0) {
     return (
       <EmptyState
+        preset="orders"
         title="No placed orders"
         description="You have not placed any orders yet. Explore our curated collections to place your first order."
         actionLabel="Start Shopping"
@@ -187,11 +202,7 @@ export function OrdersGrid({
             {isExpired && (
               <div className="order-expired-recovery-footer" role="status">
                 <div className="order-expired-message-wrap">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="order-expired-icon" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                  </svg>
+                  <Icon name="AlertCircle" size={18} className="order-expired-icon" />
                   <p className="order-expired-text">Payment window expired. Please place a new order.</p>
                 </div>
                 <Link to="/">
@@ -204,11 +215,7 @@ export function OrdersGrid({
 
             {orderPaymentError && (
               <div className="order-payment-alert is-error" role="alert">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
+                <Icon name="AlertCircle" size={16} />
                 <p className="order-payment-alert-text">{orderPaymentError}</p>
               </div>
             )}

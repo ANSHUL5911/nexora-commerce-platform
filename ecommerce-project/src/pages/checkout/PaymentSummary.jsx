@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { formatMoney } from '../../utils/money';
+import { Icon } from '../../components/ui/Icon.jsx';
+import { RollingNumber } from '../../components/ui/RollingNumber.jsx';
 
 export function PaymentSummary({
     cart = [],
@@ -33,12 +36,12 @@ export function PaymentSummary({
                     aria-controls="mobile-summary-details"
                 >
                     <span className="toggle-left">
-                        <svg className={`chevron-icon ${isMobileSummaryOpen ? 'is-open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
+                        <Icon name="ChevronDown" size={14} className={`chevron-icon ${isMobileSummaryOpen ? 'is-open' : ''}`} aria-hidden="true" />
                         <span>{isMobileSummaryOpen ? 'Hide order summary' : 'Show order summary'}</span>
                     </span>
-                    <span className="toggle-total">{formatMoney(finalTotalPaise)}</span>
+                    <span className="toggle-total">
+                        <RollingNumber amountPaise={finalTotalPaise} />
+                    </span>
                 </button>
             </div>
 
@@ -51,7 +54,9 @@ export function PaymentSummary({
 
                 <div className="summary-row">
                     <span className="summary-label">Items ({totalItems})</span>
-                    <span className="summary-value">{formatMoney(subtotalPaise)}</span>
+                    <span className="summary-value">
+                        <RollingNumber amountPaise={subtotalPaise} />
+                    </span>
                 </div>
 
                 <div className="summary-row">
@@ -65,21 +70,18 @@ export function PaymentSummary({
 
                 <div className="summary-row total-row">
                     <span className="total-label">Order total</span>
-                    <span className="total-value">{formatMoney(finalTotalPaise)}</span>
+                    <span className="total-value">
+                        <RollingNumber amountPaise={finalTotalPaise} />
+                    </span>
                 </div>
 
                 <div className="summary-trust-section">
                     <div className="trust-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        </svg>
+                        <Icon name="ShieldCheck" size={14} aria-hidden="true" />
                         <span>256-Bit SSL Encrypted Checkout</span>
                     </div>
                     <div className="trust-item">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
+                        <Icon name="Lock" size={14} aria-hidden="true" />
                         <span>Powered by Razorpay Secure</span>
                     </div>
                 </div>

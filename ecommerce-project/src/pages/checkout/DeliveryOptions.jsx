@@ -1,6 +1,9 @@
 import dayjs from 'dayjs';
+import { motion, AnimatePresence } from 'motion/react';
 import { formatMoney } from '../../utils/money';
 import { DEFAULT_DELIVERY_OPTIONS } from './deliveryOptionsData';
+import { Icon } from '../../components/ui/Icon.jsx';
+import { springs, useReducedMotion, withReducedMotion } from '../../lib/motion.js';
 
 export function DeliveryOptions({
     deliveryOptions = DEFAULT_DELIVERY_OPTIONS,
@@ -11,6 +14,7 @@ export function DeliveryOptions({
     isActive,
     onEdit,
 }) {
+    const shouldReduceMotion = useReducedMotion();
     const options = (deliveryOptions && deliveryOptions.length > 0) ? deliveryOptions : DEFAULT_DELIVERY_OPTIONS;
     const selectedOption = options.find((opt) => opt.id === selectedOptionId) || options[0];
 
@@ -25,7 +29,9 @@ export function DeliveryOptions({
     return (
         <section className={`checkout-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`} aria-labelledby="step-2-heading">
             <div className="step-header">
-                <div className="step-badge">2</div>
+                <div className="step-badge">
+                    {isCompleted && !isActive ? <Icon name="Check" size={13} strokeWidth={2.5} aria-hidden="true" /> : '2'}
+                </div>
                 <h2 id="step-2-heading" className="step-title">Shipping Method</h2>
                 {isCompleted && !isActive && (
                     <button
@@ -39,8 +45,17 @@ export function DeliveryOptions({
                 )}
             </div>
 
-            {isActive ? (
-                <div className="step-content delivery-options-step">
+            <AnimatePresence mode="wait" initial={false}>
+                {isActive ? (
+                    <motion.div
+                        key="delivery-active-step"
+                        initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+                        transition={withReducedMotion(springs.accordion, shouldReduceMotion)}
+                        style={{ overflow: 'hidden' }}
+                    >
+                        <div className="step-content delivery-options-step">
                     <fieldset className="delivery-options-group" aria-label="Available delivery speeds">
                         <legend className="visually-hidden">Select a shipping method</legend>
                         {options.map((option) => {
@@ -88,14 +103,23 @@ export function DeliveryOptions({
                         </button>
                     </div>
                 </div>
+            </motion.div>
             ) : isCompleted ? (
-                <div className="step-summary-content">
+                <motion.div
+                    key="delivery-completed-summary"
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={shouldReduceMotion ? false : { opacity: 0 }}
+                    transition={withReducedMotion(springs.responsive, shouldReduceMotion)}
+                    className="step-summary-content"
+                >
                     <p className="summary-name">{selectedOption.name}</p>
                     <p className="summary-line">
                         Estimated delivery: {getEstimatedDateText(selectedOption)} • {selectedOption.pricePaise === 0 ? 'FREE' : formatMoney(selectedOption.pricePaise)}
                     </p>
-                </div>
+                </motion.div>
             ) : null}
+            </AnimatePresence>
         </section>
     );
 }

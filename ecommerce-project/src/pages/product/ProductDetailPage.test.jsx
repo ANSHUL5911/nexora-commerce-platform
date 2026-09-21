@@ -96,4 +96,26 @@ describe('ProductDetailPage component', () => {
     });
     expect(loadCart).toHaveBeenCalled();
   });
+
+  it('toggles Technical Metadata Inspector revealing ImageMetadataPreview with authentic metadata', async () => {
+    render(
+      <MemoryRouter initialEntries={['/product/prod-123']}>
+        <Routes>
+          <Route path="product/:productId" element={<ProductDetailPage cart={[]} loadCart={loadCart} />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Monolithic Wool Coat' })).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    const toggleBtn = screen.getByRole('button', { name: /inspect technical specifications/i });
+    expect(toggleBtn).toBeInTheDocument();
+
+    await user.click(toggleBtn);
+
+    expect(screen.getByRole('heading', { name: /specifications & catalog metadata/i })).toBeInTheDocument();
+    expect(screen.getAllByAltText('Monolithic Wool Coat')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /open metadata preview/i })).toBeInTheDocument();
+  });
 });

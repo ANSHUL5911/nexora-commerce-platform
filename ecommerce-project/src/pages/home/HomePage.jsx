@@ -8,6 +8,7 @@ import { bulkCacheProductMetadata } from '../../api/guestCart.js';
 import { Skeleton } from '../../components/ui/Skeleton.jsx';
 import { EditorialObjectCard } from './components/EditorialObjectCard.jsx';
 import { normalizeProductImage } from '../../utils/media.js';
+import { SEOHead } from '../../components/ui/SEOHead.jsx';
 
 // Real Library Components (Unlumen UI & SmoothUI)
 import { MagneticButton } from '../../components/unlumen-ui/primitives/magnetic-button';
@@ -93,6 +94,11 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
 
   return (
     <div className="nx-home-root">
+      <SEOHead
+        title="Nexora — Archival Commerce & Industrial Design Artifacts"
+        description="Precision mechanical equipment, architectural instruments, and archival design objects curated with uncompromising craft standards."
+        canonical="https://nexora.design/"
+      />
       {/* 01 HEADER */}
       <Header
         cart={cart}
@@ -395,10 +401,10 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
                   filename={`${highlightProduct.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`}
                   description={highlightProduct.description || 'Crafted with disciplined material standards and architectural proportion.'}
                   metadata={{
-                    by: 'Nexora Atelier',
-                    created: 'Edition 2026',
-                    source: highlightProduct.category || 'Curated Archive',
-                    updated: 'Verified Grade A',
+                    by: highlightProduct.category || 'General',
+                    created: highlightProduct.createdAt ? new Date(highlightProduct.createdAt).toISOString().split('T')[0] : 'Active Record',
+                    source: highlightProduct.id || 'CATALOG-RECORD',
+                    updated: highlightProduct.updatedAt ? new Date(highlightProduct.updatedAt).toISOString().split('T')[0] : 'Active Record',
                   }}
                   onShare={() => {
                     if (navigator.clipboard) {
@@ -422,7 +428,7 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
             <div className="nx-philosophy-pillars">
               <div className="nx-pillar">
                 <span className="nx-pillar-num">01</span>
-                <h4 className="nx-pillar-title">Tactile Permanence</h4>
+                <h3 className="nx-pillar-title">Tactile Permanence</h3>
                 <p className="nx-pillar-text">
                   High-density organic weaves, full-grain vegetable tanned leathers, and precision-milled hardware engineered to gain character over decades.
                 </p>
@@ -430,7 +436,7 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
 
               <div className="nx-pillar">
                 <span className="nx-pillar-num">02</span>
-                <h4 className="nx-pillar-title">Proportional Restraint</h4>
+                <h3 className="nx-pillar-title">Proportional Restraint</h3>
                 <p className="nx-pillar-text">
                   Every curve and seam is governed by architectural harmony. Free from ephemeral trend noise, loud monograms, or superficial decoration.
                 </p>
@@ -438,7 +444,7 @@ export function HomePage({ cart, loadCart, currentUser, onAuthChange }) {
 
               <div className="nx-pillar">
                 <span className="nx-pillar-num">03</span>
-                <h4 className="nx-pillar-title">Ethical Provenance</h4>
+                <h3 className="nx-pillar-title">Ethical Provenance</h3>
                 <p className="nx-pillar-text">
                   Transparent supply chains, audited artisan workshops, and closed-loop material cycles meeting Standard Grade A certification.
                 </p>

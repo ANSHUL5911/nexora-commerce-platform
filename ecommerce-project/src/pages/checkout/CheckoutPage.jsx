@@ -12,6 +12,7 @@ import { paymentsApi } from '../../api/payments';
 import { AuthModal } from '../../components/auth/AuthModal';
 import { openRazorpayCheckout, retryAndPayOrder } from '../../services/paymentOrchestration';
 import { getAuthRedirectPath } from '../../utils/authRedirect';
+import { SEOHead } from '../../components/ui/SEOHead';
 import './CheckoutPage.css';
 
 export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = false, onAuthChange }) {
@@ -208,7 +209,7 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
             <>
                 <title>Checkout — Nexora</title>
                 <CheckoutHeader cart={cart} />
-                <main className="checkout-main-container" id="checkout-content">
+                <main className="checkout-main-container" id="main-content" tabIndex="-1">
                     <div className="empty-checkout-card" role="status" aria-live="polite">
                         <div className="inline-spinner" aria-hidden="true" style={{ margin: '0 auto var(--space-4)' }}></div>
                         <h1 className="empty-title">Verifying Session</h1>
@@ -224,7 +225,7 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
             <>
                 <title>Checkout — Nexora</title>
                 <CheckoutHeader cart={cart} />
-                <main className="checkout-main-container" id="checkout-content">
+                <main className="checkout-main-container" id="main-content" tabIndex="-1">
                     <div className="empty-checkout-card checkout-auth-gate-card">
                         <h1 className="empty-title">Sign in to continue</h1>
                         <p className="empty-description">
@@ -270,11 +271,15 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
 
     return (
         <>
-            <title>Checkout — Nexora</title>
+            <SEOHead
+                title="Secure Settlement — Checkout"
+                description="Complete secure order settlement with end-to-end verification and encrypted processing."
+                canonical="https://nexora.design/checkout"
+            />
 
             <CheckoutHeader cart={cart} />
 
-            <main className="checkout-main-container" id="checkout-content">
+            <main className="checkout-main-container" id="main-content" tabIndex="-1">
                 {isEmptyCart ? (
                     <div className="empty-checkout-card">
                         <h1 className="empty-title">Your shopping bag is empty</h1>

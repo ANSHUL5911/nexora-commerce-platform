@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
+import { motion } from 'motion/react';
+import { Icon } from '../../../components/ui/Icon.jsx';
+import { springs, useReducedMotion, withReducedMotion } from '../../../lib/motion.js';
 
 /**
- * AdminNav Component (Phase 07.26D)
+ * AdminNav Component (Phase 07.26D & Phase 2 Motion System)
  * Administrative header and navigation bar adhering to Architectural Editorial Commerce.
  * Features strict role separation, complete removal of storefront links, and an accessible admin profile menu.
+ * Enhanced with shared layoutId indicator for active tab transitions.
  */
 export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
+  const shouldReduceMotion = useReducedMotion();
   const tabs = [
     { id: 'overview', label: 'Overview', path: '/admin' },
     { id: 'orders', label: 'Orders', path: '/admin/orders' },
@@ -62,8 +67,25 @@ export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
                 onClick={() => onSelectTab(tab.id, tab.path)}
                 aria-current={isActive ? 'page' : undefined}
                 id={`admin-tab-${tab.id}`}
+                style={{ position: 'relative' }}
               >
-                {tab.label}
+                <span style={{ position: 'relative', zIndex: 2 }}>{tab.label}</span>
+                {isActive && (
+                  <motion.span
+                    layoutId="nx-admin-active-tab-line"
+                    className="nx-admin-active-tab-line"
+                    transition={withReducedMotion(springs.tabIndicator, shouldReduceMotion)}
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: '2px',
+                      backgroundColor: 'var(--color-accent-primary, #121212)',
+                      zIndex: 3,
+                    }}
+                  />
+                )}
               </button>
             );
           })}
@@ -79,20 +101,7 @@ export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
             aria-label="Open admin profile menu"
             id="admin-profile-menu-btn"
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <Icon name="User" size={18} aria-hidden="true" />
           </button>
 
           {isProfileOpen && (
@@ -114,21 +123,7 @@ export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
                 aria-label="Sign out of administrative session"
               >
                 <span>Sign Out</span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+                <Icon name="LogOut" size={14} aria-hidden="true" />
               </button>
             </div>
           )}

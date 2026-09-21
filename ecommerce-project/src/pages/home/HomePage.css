@@ -498,6 +498,8 @@
   margin: 0 auto;
   padding: var(--space-16) var(--space-6);
   box-sizing: border-box;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
 }
 
 .nx-section-header {
@@ -819,7 +821,7 @@
   flex-direction: column;
   gap: var(--space-4);
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -829,6 +831,7 @@
   justify-content: space-between;
   border-bottom: 1px solid var(--color-border-subtle);
   padding-bottom: var(--space-3);
+  flex-shrink: 0;
 }
 
 .nx-metadata-title {
@@ -856,10 +859,14 @@
 
 .nx-metadata-content-wrap {
   position: relative;
-  min-height: 480px;
+  min-height: 460px;
+  max-height: 72vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: var(--space-2) 0;
 }
 
 /* ==========================================================================

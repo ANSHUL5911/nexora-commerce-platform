@@ -1,4 +1,9 @@
+import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { formatMoney } from '../../utils/money';
+import { Icon } from '../../components/ui/Icon.jsx';
+import { springs, useReducedMotion, withReducedMotion } from '../../lib/motion.js';
+import { loadRazorpaySDK } from '../../services/paymentOrchestration.js';
 
 export function PaymentStep({
     isActive,
@@ -11,26 +16,40 @@ export function PaymentStep({
     serverError,
     orderId,
 }) {
+    const shouldReduceMotion = useReducedMotion();
     const isProcessing = paymentState === 'PAYMENT_PROCESSING' || paymentState === 'PAYMENT_RECONCILIATION_PENDING';
+
+    useEffect(() => {
+        if (isActive) {
+            loadRazorpaySDK().catch(() => {});
+        }
+    }, [isActive]);
 
     return (
         <section className={`checkout-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`} aria-labelledby="step-4-heading">
             <div className="step-header">
-                <div className="step-badge">4</div>
+                <div className="step-badge">
+                    {isCompleted && !isActive ? <Icon name="Check" size={13} strokeWidth={2.5} aria-hidden="true" /> : '4'}
+                </div>
                 <h2 id="step-4-heading" className="step-title">Payment</h2>
             </div>
 
-            {isActive ? (
-                <div className="step-content payment-step-content">
+            <AnimatePresence mode="wait" initial={false}>
+                {isActive ? (
+                    <motion.div
+                        key="payment-active-step"
+                        initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+                        transition={withReducedMotion(springs.accordion, shouldReduceMotion)}
+                        style={{ overflow: 'hidden' }}
+                    >
+                        <div className="step-content payment-step-content">
                     {/* Error Banner for Payment Failure / Gateway Timeout */}
                     {(paymentState === 'PAYMENT_FAILED' || paymentState === 'PAYMENT_RETRY_AVAILABLE' || serverError) && (
                         <div className="payment-alert is-error" role="alert">
                             <div className="alert-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                                </svg>
+                                <Icon name="AlertCircle" size={18} aria-hidden="true" />
                             </div>
                             <div className="alert-content">
                                 <h3 className="alert-heading">Payment Unsuccessful</h3>
@@ -48,10 +67,7 @@ export function PaymentStep({
                     {paymentState === 'EXPIRED_RESERVATION' && (
                         <div className="payment-alert is-warning" role="alert">
                             <div className="alert-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <polyline points="12 6 12 12 16 14"></polyline>
-                                </svg>
+                                <Icon name="Clock" size={18} aria-hidden="true" />
                             </div>
                             <div className="alert-content">
                                 <h3 className="alert-heading">Reservation Expired</h3>
@@ -104,16 +120,15 @@ export function PaymentStep({
                             )}
 
                             <div className="payment-security-note">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
+                                <Icon name="Lock" size={13} aria-hidden="true" />
                                 <span>You will be redirected to the secure Razorpay payment modal to complete transaction. Zero raw card credentials are stored by Nexora.</span>
                             </div>
                         </div>
                     )}
                 </div>
+            </motion.div>
             ) : null}
+            </AnimatePresence>
         </section>
     );
 }

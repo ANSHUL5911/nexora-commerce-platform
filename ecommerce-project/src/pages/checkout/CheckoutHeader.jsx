@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { Icon } from '../../components/ui/Icon.jsx';
 import './CheckoutHeader.css';
 
 export function CheckoutHeader({ cart = [] }) {
@@ -24,10 +25,7 @@ export function CheckoutHeader({ cart = [] }) {
 
                 <div className="checkout-header-right-section" aria-label="Secure Transaction">
                     <div className="secure-badge">
-                        <svg className="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
+                        <Icon name="Lock" size={14} className="lock-icon" aria-hidden="true" />
                         <span className="secure-text">Secure Checkout</span>
                     </div>
                 </div>

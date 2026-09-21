@@ -7,10 +7,21 @@ import { bulkCacheProductMetadata } from '../../api/guestCart.js';
 import { Skeleton } from '../../components/ui/Skeleton.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { ProductsGrid } from '../home/ProductsGrid.jsx';
+import AnimatedTabs from '../../components/smoothui/ui/smoothui/animated-tabs/index.tsx';
+import { TextReveal } from '../../components/unlumen-ui/primitives/text-reveal.tsx';
+import { SEOHead } from '../../components/ui/SEOHead.jsx';
 import './CatalogPage.css';
 import '../home/HomePage.css';
 
 const CATEGORIES = ['ALL', 'APPAREL', 'LIVING', 'FOOTWEAR', 'ACCESSORIES'];
+
+const CATEGORY_TABS = [
+  { id: 'ALL', label: 'All' },
+  { id: 'APPAREL', label: 'Apparel' },
+  { id: 'LIVING', label: 'Living' },
+  { id: 'FOOTWEAR', label: 'Footwear' },
+  { id: 'ACCESSORIES', label: 'Accessories' },
+];
 
 const CATEGORY_MAP = {
   ALL: undefined,
@@ -90,6 +101,29 @@ export function CatalogPage({ cart, loadCart, currentUser, onAuthChange }) {
 
   return (
     <>
+      <SEOHead
+        title="The Archive Registry — Product Catalog"
+        description="Explore precision-crafted instruments, mechanical hardware, and utilitarian artifacts engineered for enduring performance."
+        canonical="https://nexora.design/catalog"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: 'https://nexora.design/',
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: 'Catalog',
+              item: 'https://nexora.design/catalog',
+            },
+          ],
+        }}
+      />
       <Header
         cart={cart}
         currentUser={currentUser}
@@ -99,28 +133,31 @@ export function CatalogPage({ cart, loadCart, currentUser, onAuthChange }) {
       <main className="catalog-page" id="main-content">
         {/* Catalog Section Header */}
         <section className="catalog-hero" aria-labelledby="catalog-title">
-          <div className="catalog-hero-eyebrow">Collection Index</div>
+          <div className="catalog-hero-meta-bar">
+            <span className="catalog-hero-eyebrow">Collection Index</span>
+            <span className="catalog-hero-count">
+              {loading ? 'Scanning Archive...' : `${products.length} Objects Indexed`}
+            </span>
+          </div>
           <h1 id="catalog-title" className="catalog-hero-title">
             Product Catalog
           </h1>
-          <p className="catalog-hero-subtitle">
-            Engineered essentials, precision accessories, and disciplined apparel built for enduring utility.
-          </p>
+          <TextReveal
+            text="Engineered essentials, precision accessories, and disciplined apparel built for enduring utility."
+            as="p"
+            className="catalog-hero-subtitle"
+          />
         </section>
 
-        {/* Editorial Category Navigation */}
+        {/* Editorial Category Navigation (SmoothUI AnimatedTabs) */}
         <nav className="catalog-category-nav" aria-label="Product categories">
-          {CATEGORIES.map((category) => (
-            <button
-              key={category}
-              type="button"
-              className={`catalog-category-tab ${selectedCategory === category ? 'active' : ''}`}
-              onClick={() => handleCategorySelect(category)}
-              aria-current={selectedCategory === category ? 'page' : undefined}
-            >
-              {category}
-            </button>
-          ))}
+          <AnimatedTabs
+            tabs={CATEGORY_TABS}
+            activeTab={selectedCategory}
+            onChange={handleCategorySelect}
+            variant="underline"
+            className="catalog-animated-tabs"
+          />
         </nav>
 
         {/* Loading Skeletons */}
@@ -166,8 +203,9 @@ export function CatalogPage({ cart, loadCart, currentUser, onAuthChange }) {
         {/* Empty State */}
         {!loading && !error && products.length === 0 && (
           <EmptyState
+            preset="search"
             title="No products found"
-            description={search ? `No items match your search for "${search}". Try checking for spelling errors or browsing all categories.` : 'No products are currently available in this category.'}
+            description={search ? `No archival items indexed under "${search}". The collection maintains strict curation; inspect adjacent disciplines or return to the complete index.` : 'No archival pieces are currently cataloged in this discipline.'}
             actionLabel="View All Products"
             onAction={() => handleCategorySelect('ALL')}
           />
@@ -175,7 +213,10 @@ export function CatalogPage({ cart, loadCart, currentUser, onAuthChange }) {
 
         {/* Products Grid */}
         {!loading && !error && products.length > 0 && (
-          <ProductsGrid products={products} loadCart={loadCart} currentUser={currentUser} />
+          <section aria-labelledby="catalog-grid-heading">
+            <h2 id="catalog-grid-heading" className="sr-only">Catalog Inventory</h2>
+            <ProductsGrid products={products} loadCart={loadCart} currentUser={currentUser} />
+          </section>
         )}
       </main>
     </>

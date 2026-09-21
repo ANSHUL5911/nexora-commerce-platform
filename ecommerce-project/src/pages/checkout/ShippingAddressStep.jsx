@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Icon } from '../../components/ui/Icon.jsx';
+import { springs, useReducedMotion, withReducedMotion } from '../../lib/motion.js';
 
 export function ShippingAddressStep({
     address,
@@ -7,6 +10,7 @@ export function ShippingAddressStep({
     isActive,
     onEdit,
 }) {
+    const shouldReduceMotion = useReducedMotion();
     const [formData, setFormData] = useState({
         fullName: address?.fullName || '',
         addressLine1: address?.addressLine1 || '',
@@ -102,7 +106,9 @@ export function ShippingAddressStep({
     return (
         <section className={`checkout-step ${isActive ? 'is-active' : ''} ${isCompleted ? 'is-completed' : ''}`} aria-labelledby="step-1-heading">
             <div className="step-header">
-                <div className="step-badge">1</div>
+                <div className="step-badge">
+                    {isCompleted && !isActive ? <Icon name="Check" size={13} strokeWidth={2.5} aria-hidden="true" /> : '1'}
+                </div>
                 <h2 id="step-1-heading" className="step-title">Delivery Address</h2>
                 {isCompleted && !isActive && (
                     <button
@@ -116,8 +122,17 @@ export function ShippingAddressStep({
                 )}
             </div>
 
-            {isActive ? (
-                <form className="step-content address-form" onSubmit={handleSubmit} noValidate>
+            <AnimatePresence mode="wait" initial={false}>
+                {isActive ? (
+                    <motion.div
+                        key="address-active-form"
+                        initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+                        transition={withReducedMotion(springs.accordion, shouldReduceMotion)}
+                        style={{ overflow: 'hidden' }}
+                    >
+                        <form className="step-content address-form" onSubmit={handleSubmit} noValidate>
                     <div className="form-group">
                         <label htmlFor="fullName" className="form-label">
                             Full Name <span className="required-mark" aria-hidden="true">*</span>
@@ -282,14 +297,23 @@ export function ShippingAddressStep({
                         </button>
                     </div>
                 </form>
+            </motion.div>
             ) : isCompleted ? (
-                <div className="step-summary-content">
+                <motion.div
+                    key="address-completed-summary"
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={shouldReduceMotion ? false : { opacity: 0 }}
+                    transition={withReducedMotion(springs.responsive, shouldReduceMotion)}
+                    className="step-summary-content"
+                >
                     <p className="summary-name">{address.fullName}</p>
                     <p className="summary-line">{address.addressLine1}</p>
                     <p className="summary-line">{address.city}, {address.state} — {address.pincode}</p>
                     <p className="summary-phone">Phone: +91 {address.phone}</p>
-                </div>
+                </motion.div>
             ) : null}
+            </AnimatePresence>
         </section>
     );
 }
