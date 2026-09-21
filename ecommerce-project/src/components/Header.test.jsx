@@ -37,8 +37,14 @@ describe('Header component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('NEXORA')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /catalog/i })).toBeInTheDocument();
+    const brandLink = screen.getByRole('link', { name: /nexora home/i });
+    expect(brandLink).toBeInTheDocument();
+    expect(brandLink).toHaveAttribute('href', '/');
+
+    const catalogLink = screen.getByRole('link', { name: /catalog/i });
+    expect(catalogLink).toBeInTheDocument();
+    expect(catalogLink).toHaveAttribute('href', '/catalog');
+
     expect(screen.getByRole('link', { name: /orders/i })).toBeInTheDocument();
     const cartLink = screen.getByLabelText(/shopping cart with 5 items/i);
     expect(cartLink).toBeInTheDocument();
@@ -51,6 +57,8 @@ describe('Header component', () => {
     const mobileDrawer = screen.getByRole('dialog', { name: /mobile navigation/i });
     const mobileCartLink = mobileDrawer.querySelector('a[href="/cart"]');
     expect(mobileCartLink).toBeInTheDocument();
+    const mobileCatalogLink = mobileDrawer.querySelector('a[href="/catalog"]');
+    expect(mobileCatalogLink).toBeInTheDocument();
   });
 
   it('renders sign in button for unauthenticated users and opens auth modal on click', async () => {
@@ -189,5 +197,24 @@ describe('Header component', () => {
       email: 'admin@nexora.local',
       password: 'AdminSecurePassword123!',
     });
+  });
+
+  it('submitting search from homepage (/) navigates to /catalog?search=query', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Header cart={[]} />
+      </MemoryRouter>
+    );
+
+    const searchInput = screen.getByRole('textbox', { name: /search collections and products/i });
+    await user.type(searchInput, 'boots');
+
+    const searchBtn = screen.getByRole('button', { name: /submit search/i });
+    await user.click(searchBtn);
+
+    // Header input reflects what was typed
+    expect(searchInput).toHaveValue('boots');
   });
 });

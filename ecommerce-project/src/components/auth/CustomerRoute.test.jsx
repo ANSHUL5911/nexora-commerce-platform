@@ -78,4 +78,48 @@ describe('CustomerRoute Guard (Phase 07.26C)', () => {
     expect(screen.getByText('Customer Orders Content')).toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  it('allows guests and customers to access /catalog, while redirecting admins to /admin', () => {
+    const adminUser = { id: 'a-1', email: 'admin@nexora.local', role: 'admin' };
+    const customerUser = { id: 'c-1', email: 'customer@nexora.local', role: 'customer' };
+
+    // Guest on /catalog
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/catalog']}>
+        <CustomerRoute currentUser={null} authLoading={false}>
+          <div>Commerce Catalog Experience</div>
+        </CustomerRoute>
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Commerce Catalog Experience')).toBeInTheDocument();
+
+    // Customer on /catalog
+    rerender(
+      <MemoryRouter initialEntries={['/catalog']}>
+        <CustomerRoute currentUser={customerUser} authLoading={false}>
+          <div>Commerce Catalog Experience</div>
+        </CustomerRoute>
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Commerce Catalog Experience')).toBeInTheDocument();
+
+    // Admin on /catalog
+    rerender(
+      <MemoryRouter initialEntries={['/catalog']}>
+        <Routes>
+          <Route
+            path="/catalog"
+            element={
+              <CustomerRoute currentUser={adminUser} authLoading={false}>
+                <div>Commerce Catalog Experience</div>
+              </CustomerRoute>
+            }
+          />
+          <Route path="/admin" element={<div>Admin Console Shell</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.queryByText('Commerce Catalog Experience')).not.toBeInTheDocument();
+    expect(screen.getByText('Admin Console Shell')).toBeInTheDocument();
+  });
 });

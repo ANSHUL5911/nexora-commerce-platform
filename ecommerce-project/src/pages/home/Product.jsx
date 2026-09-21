@@ -4,6 +4,7 @@ import { formatMoney } from '../../utils/money.js';
 import { cartApi } from '../../api/cart.js';
 import { addGuestCartItem } from '../../api/guestCart.js';
 import { Badge } from '../../components/ui/Badge.jsx';
+import { normalizeProductImage, handleImageError } from '../../utils/media.js';
 
 export function Product({ product, loadCart, currentUser }) {
   const availableQty = product.available_quantity ?? product.availableQuantity;
@@ -67,9 +68,10 @@ export function Product({ product, loadCart, currentUser }) {
         <img
           className="product-card-image"
           data-testid="product-image"
-          src={product.image || product.imageUrl}
+          src={normalizeProductImage(product.image || product.imageUrl, category)}
           alt={product.name}
           loading="lazy"
+          onError={(e) => handleImageError(e, category)}
         />
       </Link>
 

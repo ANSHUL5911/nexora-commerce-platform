@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminProducts } from './components/AdminProducts.jsx';
 import { adminApi } from '../../api/admin.js';
@@ -63,12 +63,12 @@ describe('AdminProducts Component (Phase 07.26B)', () => {
 
     expect(screen.getByRole('heading', { name: /add new product/i })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/product name/i), 'Suede Loafer');
-    await user.type(screen.getByLabelText(/category/i), 'Footwear');
-    await user.type(screen.getByLabelText(/price \(inr/i), '150.50');
-    await user.type(screen.getByLabelText(/image url/i), 'https://example.com/loafer.jpg');
-    await user.type(screen.getByLabelText(/initial stock quantity/i), '25');
-    await user.type(screen.getByLabelText(/description/i), 'Premium soft suede loafers');
+    fireEvent.change(screen.getByLabelText(/product name/i), { target: { value: 'Suede Loafer' } });
+    fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'Footwear' } });
+    fireEvent.change(screen.getByLabelText(/price \(inr/i), { target: { value: '150.50' } });
+    fireEvent.change(screen.getByLabelText(/image url/i), { target: { value: 'https://example.com/loafer.jpg' } });
+    fireEvent.change(screen.getByLabelText(/initial stock quantity/i), { target: { value: '25' } });
+    fireEvent.change(screen.getByLabelText(/description/i), { target: { value: 'Premium soft suede loafers' } });
 
     const submitBtn = screen.getByRole('button', { name: /create product/i });
     await user.click(submitBtn);
@@ -97,8 +97,7 @@ describe('AdminProducts Component (Phase 07.26B)', () => {
     expect(screen.getByRole('heading', { name: /edit catalog product/i })).toBeInTheDocument();
 
     const nameInput = screen.getByLabelText(/product name/i);
-    await user.clear(nameInput);
-    await user.type(nameInput, 'Updated Chelsea Boot');
+    fireEvent.change(nameInput, { target: { value: 'Updated Chelsea Boot' } });
 
     const saveBtn = screen.getByRole('button', { name: /save changes/i });
     await user.click(saveBtn);

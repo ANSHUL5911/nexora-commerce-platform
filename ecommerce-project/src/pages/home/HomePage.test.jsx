@@ -1,6 +1,6 @@
-import { it, expect, describe, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, waitFor, fireEvent, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { it, expect, describe, vi, beforeEach } from 'vitest';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import { productsApi } from '../../api/products';
 import { HomePage } from './HomePage';
 
@@ -30,495 +30,231 @@ vi.mock('../../api/auth', () => ({
   },
 }));
 
-describe('HomePage component', () => {
+describe('HomePage Component (Phase 07.26E)', () => {
   let loadCart;
+
+  const mockCuratedProducts = [
+    {
+      id: 'p-1',
+      image_url: 'images/products/athletic-cotton-socks-6-pairs.jpg',
+      name: 'Architectural Cotton Socks',
+      description: 'Heavy gauge organic cotton socks',
+      price_paise: 120000,
+      category: 'Apparel',
+      available_quantity: 40,
+    },
+    {
+      id: 'p-2',
+      image_url: 'images/products/intermediate-composite-basketball.jpg',
+      name: 'Precision Leather Vessel',
+      description: 'Structured tactile everyday container',
+      price_paise: 350000,
+      category: 'Living',
+      available_quantity: 15,
+    },
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
     loadCart = vi.fn();
 
     productsApi.listProducts.mockResolvedValue({
-      products: [
-        {
-          id: 'e43638ce-6aa0-4b85-b27f-e1d07eb678c6',
-          image_url: 'images/products/athletic-cotton-socks-6-pairs.jpg',
-          name: 'Black and Gray Athletic Cotton Socks - 6 Pairs',
-          description: 'High quality cotton socks',
-          price_paise: 109000,
-          category: 'Apparel',
-          available_quantity: 50,
-        },
-        {
-          id: '15b6fc6f-327a-4ec4-896f-486349e85a3d',
-          image_url: 'images/products/intermediate-composite-basketball.jpg',
-          name: 'Intermediate Size Basketball',
-          description: 'Official size composite basketball',
-          price_paise: 209500,
-          category: 'Sports',
-          available_quantity: 20,
-        },
-      ],
-      pagination: { page: 1, limit: 12, total: 2, totalPages: 1 },
+      products: mockCuratedProducts,
+      pagination: { page: 1, limit: 6, total: 2, totalPages: 1 },
     });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('displays the products correctly', async () => {
+  it('renders editorial hero content, headline, and supporting text', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/']}>
         <HomePage cart={[]} loadCart={loadCart} />
       </MemoryRouter>
     );
-    const productContainers = await screen.findAllByTestId('product-container');
 
+    expect(screen.getByText(/autumn \/ winter edition/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: /architectural essentials, engineered for enduring utility/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/a restrained collection of everyday objects, footwear, and apparel/i)
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(productsApi.listProducts).toHaveBeenCalled();
+    });
+  });
+
+  it('provides an "Explore Collection" primary CTA linking directly to /catalog', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <HomePage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    const ctaLink = screen.getByRole('link', { name: /explore the collection in the catalog/i });
+    expect(ctaLink).toBeInTheDocument();
+    expect(ctaLink).toHaveAttribute('href', '/catalog');
+
+    await waitFor(() => {
+      expect(productsApi.listProducts).toHaveBeenCalled();
+    });
+  });
+
+  it('fetches a curated subset of products from productsApi and renders them', async () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <HomePage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(productsApi.listProducts).toHaveBeenCalledWith({ limit: 6 });
+    });
+
+    const productContainers = await screen.findAllByTestId('product-container');
     expect(productContainers.length).toBe(2);
 
     expect(
-      within(productContainers[0])
-        .getByText('Black and Gray Athletic Cotton Socks - 6 Pairs')
+      within(productContainers[0]).getByText('Architectural Cotton Socks')
     ).toBeInTheDocument();
 
     expect(
-      within(productContainers[1])
-        .getByText('Intermediate Size Basketball')
+      within(productContainers[1]).getByText('Precision Leather Vessel')
     ).toBeInTheDocument();
   });
 
-  it('maps category tabs to canonical backend values when clicked', async () => {
+  it('renders category navigation cards linking to /catalog with category query params', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/']}>
         <HomePage cart={[]} loadCart={loadCart} />
       </MemoryRouter>
     );
 
-    // Initial load: 'ALL' sends undefined category
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: undefined,
-      });
-    });
+    const apparelLink = screen.getByRole('link', { name: /shop apparel category/i });
+    expect(apparelLink).toBeInTheDocument();
+    expect(apparelLink).toHaveAttribute('href', '/catalog?category=APPAREL');
 
-    // Click 'APPAREL' tab -> sends 'Apparel'
-    const apparelTab = screen.getByRole('button', { name: 'APPAREL' });
-    fireEvent.click(apparelTab);
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: 'Apparel',
-      });
-    });
+    const livingLink = screen.getByRole('link', { name: /shop living category/i });
+    expect(livingLink).toBeInTheDocument();
+    expect(livingLink).toHaveAttribute('href', '/catalog?category=LIVING');
 
-    // Click 'LIVING' tab -> sends 'Living'
-    const livingTab = screen.getByRole('button', { name: 'LIVING' });
-    fireEvent.click(livingTab);
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: 'Living',
-      });
-    });
+    const footwearLink = screen.getByRole('link', { name: /shop footwear category/i });
+    expect(footwearLink).toBeInTheDocument();
+    expect(footwearLink).toHaveAttribute('href', '/catalog?category=FOOTWEAR');
 
-    // Click 'FOOTWEAR' tab -> sends 'Footwear'
-    const footwearTab = screen.getByRole('button', { name: 'FOOTWEAR' });
-    fireEvent.click(footwearTab);
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: 'Footwear',
-      });
-    });
+    const accessoriesLink = screen.getByRole('link', { name: /shop accessories category/i });
+    expect(accessoriesLink).toBeInTheDocument();
+    expect(accessoriesLink).toHaveAttribute('href', '/catalog?category=ACCESSORIES');
 
-    // Click 'ACCESSORIES' tab -> sends 'Accessories'
-    const accessoriesTab = screen.getByRole('button', { name: 'ACCESSORIES' });
-    fireEvent.click(accessoriesTab);
     await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: 'Accessories',
-      });
-    });
-
-    // Click 'ALL' tab -> sends undefined
-    const allTab = screen.getByRole('button', { name: 'ALL' });
-    fireEvent.click(allTab);
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: undefined,
-      });
+      expect(productsApi.listProducts).toHaveBeenCalled();
     });
   });
 
-  it('directly renders backend-returned products for category without keywords filtering', async () => {
+  it('renders "View All Products" CTA linking to /catalog', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/']}>
         <HomePage cart={[]} loadCart={loadCart} />
       </MemoryRouter>
     );
 
-    // Initial products loaded
-    expect(await screen.findByText('Black and Gray Athletic Cotton Socks - 6 Pairs')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(productsApi.listProducts).toHaveBeenCalled();
+    });
 
-    // Mock response for the LIVING category filter click
+    const viewAllLink = screen.getByRole('link', { name: /view all products in catalog/i });
+    expect(viewAllLink).toBeInTheDocument();
+    expect(viewAllLink).toHaveAttribute('href', '/catalog');
+  });
+
+  it('gracefully handles API failure without crashing the homepage', async () => {
+    productsApi.listProducts.mockRejectedValueOnce(new Error('Backend connection timeout'));
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <HomePage cart={[]} loadCart={loadCart} />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Backend connection timeout')).toBeInTheDocument();
+    // Verify hero and categories are still intact despite product fetch failure
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /shop apparel category/i })).toBeInTheDocument();
+
+    // Verify retry button exists and triggers reload
+    const retryBtn = screen.getByRole('button', { name: /retry/i });
+    expect(retryBtn).toBeInTheDocument();
+
     productsApi.listProducts.mockResolvedValueOnce({
-      products: [
-        {
-          id: 'living-product-id',
-          image_url: 'images/products/artisanal-ceramic-vessel.jpg',
-          name: 'Artisanal Ceramic Vessel',
-          description: 'Hand-thrown stoneware vessel',
-          price_paise: 420000,
-          category: 'Living',
-          available_quantity: 18,
-        },
-      ],
-      pagination: { page: 1, limit: 12, total: 1, totalPages: 1 },
+      products: mockCuratedProducts,
+      pagination: { total: 2 },
     });
-
-    const livingTab = screen.getByRole('button', { name: 'LIVING' });
-    fireEvent.click(livingTab);
-
-    expect(await screen.findByText('Artisanal Ceramic Vessel')).toBeInTheDocument();
-  });
-
-  it('triggers search automatically after the debounce period without requiring Enter', async () => {
-    render(
-      <MemoryRouter>
-        <HomePage cart={[]} loadCart={loadCart} />
-      </MemoryRouter>
-    );
+    fireEvent.click(retryBtn);
 
     await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: undefined,
-        category: undefined,
-      });
-    });
-    expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-
-    vi.useFakeTimers();
-    try {
-      const searchInput = screen.getByPlaceholderText('Search collections, essentials...');
-      fireEvent.change(searchInput, { target: { value: 'socks' } });
-
-      // Halfway through debounce window (150ms) - no search dispatched yet
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(150);
-      });
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-
-      // After remaining debounce time (300ms total) - search is dispatched
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(150);
-      });
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: 'socks',
-        category: undefined,
-      });
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(2);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('collapses rapid typing into a single debounced search request', async () => {
-    render(
-      <MemoryRouter>
-        <HomePage cart={[]} loadCart={loadCart} />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-    });
-
-    vi.useFakeTimers();
-    try {
-      const searchInput = screen.getByPlaceholderText('Search collections, essentials...');
-
-      // Simulate typing 'apparel' rapidly (100ms between keystrokes)
-      fireEvent.change(searchInput, { target: { value: 'a' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(100);
-      });
-
-      fireEvent.change(searchInput, { target: { value: 'ap' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(100);
-      });
-
-      fireEvent.change(searchInput, { target: { value: 'app' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(100);
-      });
-
-      fireEvent.change(searchInput, { target: { value: 'appa' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(100);
-      });
-
-      fireEvent.change(searchInput, { target: { value: 'apparel' } });
-      // Still in debounce window - only initial load was dispatched
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-
-      // Complete the debounce period after final keystroke
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(300);
-      });
-
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(2);
-      expect(productsApi.listProducts).toHaveBeenLastCalledWith({
-        search: 'apparel',
-        category: undefined,
-      });
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('restores normal catalog when search input is cleared or whitespace-only', async () => {
-    render(
-      <MemoryRouter>
-        <HomePage cart={[]} loadCart={loadCart} />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-    });
-
-    vi.useFakeTimers();
-    try {
-      const searchInput = screen.getByPlaceholderText('Search collections, essentials...');
-
-      // Type search term
-      fireEvent.change(searchInput, { target: { value: 'socks' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(300);
-      });
-      expect(productsApi.listProducts).toHaveBeenLastCalledWith({
-        search: 'socks',
-        category: undefined,
-      });
-
-      // Clear with whitespace
-      fireEvent.change(searchInput, { target: { value: '   ' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(300);
-      });
-
-      // Normal catalog restored
-      expect(productsApi.listProducts).toHaveBeenLastCalledWith({
-        search: undefined,
-        category: undefined,
-      });
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('sends category and search parameters together and preserves category selection', async () => {
-    render(
-      <MemoryRouter>
-        <HomePage cart={[]} loadCart={loadCart} />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-    });
-
-    // Select APPAREL category
-    const apparelTab = screen.getByRole('button', { name: 'APPAREL' });
-    fireEvent.click(apparelTab);
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenLastCalledWith({
-        search: undefined,
-        category: 'Apparel',
-      });
-    });
-
-    vi.useFakeTimers();
-    try {
-      // Type search term within APPAREL
-      const searchInput = screen.getByPlaceholderText('Search collections, essentials...');
-      fireEvent.change(searchInput, { target: { value: 'cotton' } });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(300);
-      });
-
-      expect(productsApi.listProducts).toHaveBeenLastCalledWith({
-        search: 'cotton',
-        category: 'Apparel',
-      });
-      expect(apparelTab).toHaveClass('active');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('submits search immediately on Enter key press without waiting for debounce', async () => {
-    render(
-      <MemoryRouter>
-        <HomePage cart={[]} loadCart={loadCart} />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-    });
-
-    vi.useFakeTimers();
-    try {
-      const searchInput = screen.getByPlaceholderText('Search collections, essentials...');
-      fireEvent.change(searchInput, { target: { value: 'leather' } });
-
-      // Advance only 50ms (debounce has not expired)
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(50);
-      });
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(1);
-
-      // Press Enter / submit form
-      await act(async () => {
-        fireEvent.submit(searchInput.closest('form'));
-      });
-
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(2);
-      expect(productsApi.listProducts).toHaveBeenLastCalledWith({
-        search: 'leather',
-        category: undefined,
-      });
-
-      // Ensure no duplicate request is fired when the 300ms debounce timer would have expired
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(300);
-      });
-      expect(productsApi.listProducts).toHaveBeenCalledTimes(2);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('prevents a slow stale response from overwriting newer search results', async () => {
-    let resolveFirstRequest;
-    const firstRequestPromise = new Promise((resolve) => {
-      resolveFirstRequest = resolve;
-    });
-
-    // First search returns a delayed promise
-    productsApi.listProducts.mockReturnValueOnce(firstRequestPromise);
-
-    render(
-      <MemoryRouter initialEntries={['/?search=first']}>
-        <HomePage cart={[]} loadCart={loadCart} />
-      </MemoryRouter>
-    );
-
-    await waitFor(() => {
-      expect(productsApi.listProducts).toHaveBeenCalledWith({
-        search: 'first',
-        category: undefined,
-      });
-    });
-
-    // Second search resolves immediately with newer product
-    productsApi.listProducts.mockResolvedValueOnce({
-      products: [
-        {
-          id: 'newer-product-id',
-          image_url: 'images/products/newer.jpg',
-          name: 'Newer Fresh Product',
-          description: 'Fresh search result',
-          price_paise: 99900,
-          category: 'Living',
-          available_quantity: 10,
-        },
-      ],
-      pagination: { page: 1, limit: 12, total: 1, totalPages: 1 },
-    });
-
-    // Trigger newer search by changing category
-    const livingTab = screen.getByRole('button', { name: 'LIVING' });
-    fireEvent.click(livingTab);
-
-    // Verify newer search result renders
-    expect(await screen.findByText('Newer Fresh Product')).toBeInTheDocument();
-
-    // Now resolve the older delayed first request
-    resolveFirstRequest({
-      products: [
-        {
-          id: 'stale-product-id',
-          image_url: 'images/products/stale.jpg',
-          name: 'Stale Older Product',
-          description: 'Stale search result',
-          price_paise: 55500,
-          category: 'Living',
-          available_quantity: 5,
-        },
-      ],
-      pagination: { page: 1, limit: 12, total: 1, totalPages: 1 },
-    });
-
-    // Stale result should be ignored and newer product preserved
-    await waitFor(() => {
-      expect(screen.getByText('Newer Fresh Product')).toBeInTheDocument();
-      expect(screen.queryByText('Stale Older Product')).not.toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 
-  it('renders empty state when search returns no products', async () => {
+  it('renders gracefully when catalog has zero products', async () => {
     productsApi.listProducts.mockResolvedValueOnce({
       products: [],
-      pagination: { page: 1, limit: 12, total: 0, totalPages: 0 },
+      pagination: { total: 0 },
     });
 
     render(
-      <MemoryRouter initialEntries={['/?search=nonexistent']}>
+      <MemoryRouter initialEntries={['/']}>
         <HomePage cart={[]} loadCart={loadCart} />
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('No products found')).toBeInTheDocument();
-    expect(
-      screen.getByText(/No items match your search for "nonexistent"/i)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/no products currently available in this edition/i)).toBeInTheDocument();
   });
 
-  it('renders error state on API failure and allows retry', async () => {
-    productsApi.listProducts.mockRejectedValueOnce(new Error('Network error loading catalog'));
+  it('allows authenticated customers and unauthenticated guests to access homepage', async () => {
+    const customerUser = {
+      id: 'c-1',
+      email: 'customer@nexora.local',
+      role: 'customer',
+      full_name: 'Customer One',
+    };
 
+    // Customer
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <HomePage cart={[]} currentUser={customerUser} />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+    // Guest
+    rerender(
+      <MemoryRouter initialEntries={['/']}>
+        <HomePage cart={[]} currentUser={null} />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(productsApi.listProducts).toHaveBeenCalled();
+    });
+  });
+
+  it('browser refresh on /?query does not render catalog grid or trigger catalog pagination', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/?search=table&category=LIVING']}>
         <HomePage cart={[]} loadCart={loadCart} />
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('Unable to load collection')).toBeInTheDocument();
-    expect(screen.getByText('Network error loading catalog')).toBeInTheDocument();
+    // Verifies HomePage renders its own editorial structure, not catalog controls
+    expect(screen.getByText(/autumn \/ winter edition/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: /product catalog/i })).not.toBeInTheDocument();
 
-    // Successful retry
-    productsApi.listProducts.mockResolvedValueOnce({
-      products: [
-        {
-          id: 'retry-prod-id',
-          image_url: 'images/products/retry.jpg',
-          name: 'Retry Success Product',
-          description: 'Desc',
-          price_paise: 10000,
-          category: 'Apparel',
-          available_quantity: 10,
-        },
-      ],
-      pagination: { page: 1, limit: 12, total: 1, totalPages: 1 },
+    // Fetches curated subset ({ limit: 6 }) rather than full catalog pagination queries
+    await waitFor(() => {
+      expect(productsApi.listProducts).toHaveBeenCalledWith({ limit: 6 });
     });
-
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
-    expect(await screen.findByText('Retry Success Product')).toBeInTheDocument();
   });
 });

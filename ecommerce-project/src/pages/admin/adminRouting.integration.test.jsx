@@ -131,7 +131,8 @@ describe('Admin Routing & Session Integration (Phase 07.26)', () => {
 
   describe('Strict Admin to Customer Route Redirection (Phase 07.26C)', () => {
     it.each([
-      ['/', 'root storefront catalog'],
+      ['/', 'root brand homepage'],
+      ['/catalog', 'customer catalog page'],
       ['/orders', 'customer orders page'],
       ['/cart', 'customer cart page'],
       ['/checkout', 'customer checkout page'],

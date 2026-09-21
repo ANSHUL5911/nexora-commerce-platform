@@ -9,6 +9,7 @@ import { formatMoney } from '../../utils/money.js';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Skeleton } from '../../components/ui/Skeleton.jsx';
+import { normalizeProductImage, handleImageError } from '../../utils/media.js';
 import './ProductDetailPage.css';
 
 export function ProductDetailPage({ cart, loadCart, currentUser, onAuthChange }) {
@@ -116,8 +117,9 @@ export function ProductDetailPage({ cart, loadCart, currentUser, onAuthChange })
             <div className="pdp-image-wrap">
               <img
                 className="pdp-image"
-                src={product.image || product.imageUrl}
+                src={normalizeProductImage(product.image || product.imageUrl, product.category)}
                 alt={product.name}
+                onError={(e) => handleImageError(e, product.category)}
               />
             </div>
 

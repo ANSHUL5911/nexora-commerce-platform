@@ -54,7 +54,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
       const trimmed = rawQuery.trim();
       lastCommittedSearchRef.current = trimmed;
 
-      if (location.pathname === '/') {
+      if (location.pathname === '/catalog') {
         setSearchParams(
           (prev) => {
             const current = prev.get('search') || '';
@@ -73,22 +73,30 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
         );
       } else {
         if (trimmed) {
-          navigate(`/?search=${encodeURIComponent(trimmed)}`);
+          navigate(`/catalog?search=${encodeURIComponent(trimmed)}`);
         } else {
-          navigate('/');
+          navigate('/catalog');
         }
       }
     },
     [location.pathname, setSearchParams, navigate]
   );
 
-  // Synchronize searchInput when search in URL changes externally (e.g., navigation or reset)
+  // Synchronize searchInput when search in URL or location changes
   useEffect(() => {
-    if (search !== lastCommittedSearchRef.current) {
-      lastCommittedSearchRef.current = search;
-      setSearchInput(search);
+    if (location.pathname === '/catalog') {
+      const currentParam = searchParams.get('search') || '';
+      if (currentParam !== lastCommittedSearchRef.current) {
+        lastCommittedSearchRef.current = currentParam;
+        setSearchInput(currentParam);
+      }
+    } else {
+      if (lastCommittedSearchRef.current !== '') {
+        lastCommittedSearchRef.current = '';
+        setSearchInput('');
+      }
     }
-  }, [search]);
+  }, [location.pathname, searchParams]);
 
   // Debounced live search while user types (~300ms idle delay)
   useEffect(() => {
@@ -181,7 +189,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
           <nav className="nx-nav-links" aria-label={isAdmin ? 'Admin Navigation' : 'Main Navigation'}>
             {!isAdmin ? (
               <>
-                <NavLink to="/" end className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`}>
+                <NavLink to="/catalog" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`}>
                   Catalog
                 </NavLink>
 
@@ -295,8 +303,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
             {!isAdmin ? (
               <>
                 <NavLink
-                  to="/"
-                  end
+                  to="/catalog"
                   className="nx-mobile-nav-link"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >

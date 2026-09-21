@@ -7,6 +7,7 @@ import { productsApi } from './api/products.js';
 import { getGuestCart, hydrateGuestCartItems, clearGuestCart, removeGuestCartItem } from './api/guestCart.js';
 import { adaptCartItem } from './api/adapters.js';
 import { HomePage } from './pages/home/HomePage.jsx';
+import { CatalogPage } from './pages/catalog/CatalogPage.jsx';
 import { ProductDetailPage } from './pages/product/ProductDetailPage.jsx';
 import { CartPage } from './pages/cart/CartPage.jsx';
 import { CheckoutPage } from './pages/checkout/CheckoutPage.jsx';
@@ -154,6 +155,20 @@ function App() {
         element={
           <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
             <HomePage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              authLoading={authLoading}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
+        }
+      />
+      <Route
+        path="catalog"
+        element={
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <CatalogPage
               cart={cart}
               loadCart={loadCart}
               currentUser={currentUser}
