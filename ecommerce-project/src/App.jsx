@@ -1,23 +1,26 @@
 import { Routes, Route } from 'react-router';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import './App.css';
 import { cartApi } from './api/cart.js';
 import { authApi } from './api/auth.js';
 import { productsApi } from './api/products.js';
 import { getGuestCart, hydrateGuestCartItems, clearGuestCart, removeGuestCartItem } from './api/guestCart.js';
 import { adaptCartItem } from './api/adapters.js';
-import { HomePage } from './pages/home/HomePage.jsx';
-import { CatalogPage } from './pages/catalog/CatalogPage.jsx';
-import { ProductDetailPage } from './pages/product/ProductDetailPage.jsx';
-import { CartPage } from './pages/cart/CartPage.jsx';
-import { CheckoutPage } from './pages/checkout/CheckoutPage.jsx';
-import { OrdersPage } from './pages/orders/OrdersPage.jsx';
-import { TrackingPage } from './pages/TrackingPage.jsx';
-import { PaymentPage } from './pages/payment/PaymentPage.jsx';
-import { NotFoundPage } from './pages/not_found/NotFoundPage.jsx';
 import { AdminRoute } from './components/auth/AdminRoute.jsx';
 import { CustomerRoute } from './components/auth/CustomerRoute.jsx';
-import { AdminPage } from './pages/admin/AdminPage.jsx';
+import { RouteLoadingFallback } from './components/ui/RouteLoadingFallback.jsx';
+
+// Route-level code-splitting for award-caliber initial bundle performance
+const HomePage = lazy(() => import('./pages/home/HomePage.jsx').then((m) => ({ default: m.HomePage })));
+const CatalogPage = lazy(() => import('./pages/catalog/CatalogPage.jsx').then((m) => ({ default: m.CatalogPage })));
+const ProductDetailPage = lazy(() => import('./pages/product/ProductDetailPage.jsx').then((m) => ({ default: m.ProductDetailPage })));
+const CartPage = lazy(() => import('./pages/cart/CartPage.jsx').then((m) => ({ default: m.CartPage })));
+const CheckoutPage = lazy(() => import('./pages/checkout/CheckoutPage.jsx').then((m) => ({ default: m.CheckoutPage })));
+const OrdersPage = lazy(() => import('./pages/orders/OrdersPage.jsx').then((m) => ({ default: m.OrdersPage })));
+const TrackingPage = lazy(() => import('./pages/TrackingPage.jsx').then((m) => ({ default: m.TrackingPage })));
+const PaymentPage = lazy(() => import('./pages/payment/PaymentPage.jsx').then((m) => ({ default: m.PaymentPage })));
+const NotFoundPage = lazy(() => import('./pages/not_found/NotFoundPage.jsx').then((m) => ({ default: m.NotFoundPage })));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage.jsx').then((m) => ({ default: m.AdminPage })));
 
 function App() {
   const [cart, setCart] = useState([]);
@@ -149,7 +152,12 @@ function App() {
   }, [loadCart, migrateGuestCartToServer]);
 
   return (
-    <Routes>
+    <>
+      <nav aria-label="Skip navigation">
+        <a href="#main-content" className="nx-skip-link">Skip to main content</a>
+      </nav>
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Routes>
       <Route
         path="/"
         element={
@@ -315,7 +323,9 @@ function App() {
           />
         }
       />
-    </Routes>
+      </Routes>
+      </Suspense>
+    </>
   );
 }
 

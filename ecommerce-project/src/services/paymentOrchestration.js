@@ -120,7 +120,38 @@ export async function retryAndPayOrder({
   }
 }
 
+/**
+ * Dynamically loads the Razorpay Standard Checkout SDK asynchronously on demand.
+ * Eliminates render-blocking third-party scripts from initial storefront navigation.
+ *
+ * @returns {Promise<boolean>} Resolves true when window.Razorpay is available, false otherwise.
+ */
+export function loadRazorpaySDK() {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if (window.Razorpay) return Promise.resolve(true);
+
+  const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+  if (existing) {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      existing.addEventListener('load', () => resolve(true), { once: true });
+      existing.addEventListener('error', () => resolve(false), { once: true });
+    });
+  }
+
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+}
+
 export default {
   openRazorpayCheckout,
   retryAndPayOrder,
+  loadRazorpaySDK,
 };
+

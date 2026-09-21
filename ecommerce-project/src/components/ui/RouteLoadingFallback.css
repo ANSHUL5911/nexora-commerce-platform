@@ -1,0 +1,58 @@
+.nx-route-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 48vh;
+  width: 100%;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  background-color: var(--color-surface-primary);
+}
+
+.nx-route-loader-bar {
+  width: 120px;
+  height: 2px;
+  background-color: var(--color-border-subtle);
+  overflow: hidden;
+  position: relative;
+  border-radius: 9999px;
+}
+
+.nx-route-loader-indeterminate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  background-color: var(--color-accent);
+  animation: nx-indeterminate 1.4s infinite cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.nx-route-loader-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+@keyframes nx-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nx-route-loader-indeterminate {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
