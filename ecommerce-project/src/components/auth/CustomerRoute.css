@@ -1,0 +1,48 @@
+.nx-customer-loading-screen {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background-color: var(--color-canvas);
+}
+
+.nx-customer-loading-card {
+  max-width: 480px;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.nx-customer-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border-subtle);
+  border-top-color: var(--color-accent-primary);
+  border-radius: 50%;
+  animation: nx-spin 0.8s linear infinite;
+  margin: 0 auto var(--space-4);
+}
+
+@keyframes nx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.nx-customer-loading-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.nx-customer-loading-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

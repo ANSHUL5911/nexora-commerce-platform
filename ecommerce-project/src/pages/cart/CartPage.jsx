@@ -4,6 +4,7 @@ import { Header } from '../../components/Header.jsx';
 import { cartApi } from '../../api/cart.js';
 import { updateGuestCartItem, removeGuestCartItem } from '../../api/guestCart.js';
 import { formatMoney } from '../../utils/money.js';
+import { getAuthRedirectPath } from '../../utils/authRedirect.js';
 import { Button } from '../../components/ui/Button.jsx';
 import { EmptyState } from '../../components/ui/EmptyState.jsx';
 import { AuthModal } from '../../components/auth/AuthModal.jsx';
@@ -28,11 +29,7 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
       await onAuthChange(user);
     }
     setIsAuthModalOpen(false);
-    if (user?.role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/checkout');
-    }
+    navigate(getAuthRedirectPath(user, '/checkout'));
   };
 
   const handleQuantityChange = async (item, newQty) => {

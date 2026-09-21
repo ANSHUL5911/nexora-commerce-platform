@@ -91,7 +91,7 @@ describe('Header component', () => {
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
   });
 
-  it('renders Admin navigation link in desktop and mobile only when currentUser.role is admin', async () => {
+  it('renders Admin navigation link and hides Catalog, Orders, Cart, and Search when currentUser.role is admin', async () => {
     const adminUser = {
       id: 'a1',
       full_name: 'Admin User',
@@ -105,10 +105,16 @@ describe('Header component', () => {
       </MemoryRouter>
     );
 
-    // Desktop link
+    // Desktop admin link
     const adminLinks = screen.getAllByRole('link', { name: /admin/i });
     expect(adminLinks.length).toBeGreaterThanOrEqual(1);
     expect(adminLinks[0]).toHaveAttribute('href', '/admin');
+
+    // Customer links MUST be hidden
+    expect(screen.queryByRole('link', { name: /^catalog$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^orders$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^cart$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('search')).not.toBeInTheDocument();
 
     // Dropdown contains Admin Dashboard
     const user = userEvent.setup();
@@ -116,7 +122,7 @@ describe('Header component', () => {
     expect(screen.getByRole('menuitem', { name: /admin dashboard/i })).toBeInTheDocument();
   });
 
-  it('does NOT render Admin navigation links when currentUser.role is customer or guest', () => {
+  it('renders customer navigation links and search when currentUser.role is customer or guest', () => {
     const customerUser = {
       id: 'c1',
       full_name: 'Customer User',
@@ -130,7 +136,14 @@ describe('Header component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByRole('link', { name: /^admin$/i })).not.toBeInTheDocument();
+    // Customer links visible
+    expect(screen.getByRole('link', { name: /^catalog$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^orders$/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/shopping cart/i)).toBeInTheDocument();
+    expect(screen.getByRole('search')).toBeInTheDocument();
+
+    // Admin links hidden
+    expect(screen.queryByRole('link', { name: /admin dashboard/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: /admin dashboard/i })).not.toBeInTheDocument();
 
     // Guest / Unauthenticated
@@ -140,7 +153,11 @@ describe('Header component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByRole('link', { name: /^admin$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^catalog$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^orders$/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/shopping cart/i)).toBeInTheDocument();
+    expect(screen.getByRole('search')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /admin dashboard/i })).not.toBeInTheDocument();
   });
 
   it('navigates to /admin after successful admin login', async () => {

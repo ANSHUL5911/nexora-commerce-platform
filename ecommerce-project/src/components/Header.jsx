@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useSearchParams, useNavigate, useLocation } from 'react-router';
 import { AuthModal } from './auth/AuthModal.jsx';
 import { authApi } from '../api/auth.js';
+import { getAuthRedirectPath } from '../utils/authRedirect.js';
 import './Header.css';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -46,6 +47,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
   }, [propUser, onAuthChange]);
 
   const totalQuantity = (cart || []).reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const isAdmin = currentUser?.role === 'admin';
 
   const applySearch = useCallback(
     (rawQuery) => {
@@ -124,6 +126,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
       setCurrentUser(null);
       setIsUserDropdownOpen(false);
       onAuthChange?.(null);
+      navigate('/');
     } catch (err) {
       console.error('Logout failed:', err);
     }
@@ -134,8 +137,9 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
     if (onAuthChange) {
       await onAuthChange(user);
     }
-    if (user?.role === 'admin') {
-      navigate('/admin');
+    const targetPath = getAuthRedirectPath(user);
+    if (targetPath) {
+      navigate(targetPath);
     }
   };
 
@@ -144,46 +148,55 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
       <header className="nx-header" role="banner">
         <div className="nx-header-inner">
           {/* Logo / Brand */}
-          <NavLink to="/" className="nx-brand-link" aria-label="Nexora Home">
+          <NavLink
+            to={isAdmin ? '/admin' : '/'}
+            className="nx-brand-link"
+            aria-label={isAdmin ? 'Nexora Admin Home' : 'Nexora Home'}
+          >
             <span className="nx-brand-wordmark">NEXORA</span>
+            {isAdmin && <span className="nx-admin-badge" style={{ marginLeft: '8px' }}>Console</span>}
           </NavLink>
 
-          {/* Desktop Search Bar */}
-          <form className="nx-search-form" onSubmit={handleSearchSubmit} role="search">
-            <input
-              type="text"
-              className="nx-search-input"
-              placeholder="Search collections, essentials..."
-              aria-label="Search collections and products"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            <button type="submit" className="nx-search-btn" aria-label="Submit search">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </button>
-          </form>
+          {/* Desktop Search Bar - Customer Only */}
+          {!isAdmin && (
+            <form className="nx-search-form" onSubmit={handleSearchSubmit} role="search">
+              <input
+                type="text"
+                className="nx-search-input"
+                placeholder="Search collections, essentials..."
+                aria-label="Search collections and products"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <button type="submit" className="nx-search-btn" aria-label="Submit search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+            </form>
+          )}
 
           {/* Desktop Navigation Links */}
-          <nav className="nx-nav-links" aria-label="Main Navigation">
-            <NavLink to="/" end className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`}>
-              Catalog
-            </NavLink>
+          <nav className="nx-nav-links" aria-label={isAdmin ? 'Admin Navigation' : 'Main Navigation'}>
+            {!isAdmin ? (
+              <>
+                <NavLink to="/" end className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`}>
+                  Catalog
+                </NavLink>
 
-            <NavLink to="/orders" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`}>
-              Orders
-            </NavLink>
+                <NavLink to="/orders" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`}>
+                  Orders
+                </NavLink>
 
-            <NavLink to="/cart" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`} aria-label={`Shopping cart with ${totalQuantity} items`}>
-              <span>Cart</span>
-              <span className="nx-cart-badge">{totalQuantity}</span>
-            </NavLink>
-
-            {currentUser?.role === 'admin' && (
+                <NavLink to="/cart" className={({ isActive }) => `nx-nav-link ${isActive ? 'active' : ''}`} aria-label={`Shopping cart with ${totalQuantity} items`}>
+                  <span>Cart</span>
+                  <span className="nx-cart-badge">{totalQuantity}</span>
+                </NavLink>
+              </>
+            ) : (
               <NavLink to="/admin" className={({ isActive }) => `nx-nav-link nx-admin-link ${isActive ? 'active' : ''}`}>
-                Admin
+                Admin Dashboard
               </NavLink>
             )}
 
@@ -210,7 +223,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
                       <div className="nx-user-name">{currentUser.full_name}</div>
                       <div className="nx-user-email">{currentUser.email}</div>
                     </div>
-                    {currentUser.role === 'admin' && (
+                    {isAdmin && (
                       <NavLink
                         to="/admin"
                         className="nx-dropdown-item nx-dropdown-admin-item"
@@ -259,51 +272,55 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
         <div className="nx-mobile-drawer" role="dialog" aria-label="Mobile Navigation">
-          <form className="nx-search-form" onSubmit={handleSearchSubmit} role="search">
-            <input
-              type="text"
-              className="nx-search-input"
-              placeholder="Search products..."
-              aria-label="Search collections and products"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            <button type="submit" className="nx-search-btn" aria-label="Submit search">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-            </button>
-          </form>
+          {!isAdmin && (
+            <form className="nx-search-form" onSubmit={handleSearchSubmit} role="search">
+              <input
+                type="text"
+                className="nx-search-input"
+                placeholder="Search products..."
+                aria-label="Search collections and products"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <button type="submit" className="nx-search-btn" aria-label="Submit search">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+            </form>
+          )}
 
           <nav className="nx-mobile-nav-list">
-            <NavLink
-              to="/"
-              end
-              className="nx-mobile-nav-link"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <span>Catalog</span>
-            </NavLink>
+            {!isAdmin ? (
+              <>
+                <NavLink
+                  to="/"
+                  end
+                  className="nx-mobile-nav-link"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span>Catalog</span>
+                </NavLink>
 
-            <NavLink
-              to="/orders"
-              className="nx-mobile-nav-link"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <span>Orders</span>
-            </NavLink>
+                <NavLink
+                  to="/orders"
+                  className="nx-mobile-nav-link"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span>Orders</span>
+                </NavLink>
 
-            <NavLink
-              to="/cart"
-              className="nx-mobile-nav-link"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <span>Cart</span>
-              <span className="nx-cart-badge">{totalQuantity}</span>
-            </NavLink>
-
-            {currentUser?.role === 'admin' && (
+                <NavLink
+                  to="/cart"
+                  className="nx-mobile-nav-link"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <span>Cart</span>
+                  <span className="nx-cart-badge">{totalQuantity}</span>
+                </NavLink>
+              </>
+            ) : (
               <NavLink
                 to="/admin"
                 className="nx-mobile-nav-link nx-admin-link"

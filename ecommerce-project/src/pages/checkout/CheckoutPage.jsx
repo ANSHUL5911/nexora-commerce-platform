@@ -11,6 +11,7 @@ import { checkoutApi } from '../../api/checkout';
 import { paymentsApi } from '../../api/payments';
 import { AuthModal } from '../../components/auth/AuthModal';
 import { openRazorpayCheckout, retryAndPayOrder } from '../../services/paymentOrchestration';
+import { getAuthRedirectPath } from '../../utils/authRedirect';
 import './CheckoutPage.css';
 
 export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = false, onAuthChange }) {
@@ -196,8 +197,9 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
             await onAuthChange(user);
         }
         setIsAuthModalOpen(false);
-        if (user?.role === 'admin') {
-            navigate('/admin');
+        const redirect = getAuthRedirectPath(user);
+        if (redirect) {
+            navigate(redirect);
         }
     };
 

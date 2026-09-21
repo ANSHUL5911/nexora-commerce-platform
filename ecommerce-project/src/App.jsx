@@ -15,6 +15,7 @@ import { TrackingPage } from './pages/TrackingPage.jsx';
 import { PaymentPage } from './pages/payment/PaymentPage.jsx';
 import { NotFoundPage } from './pages/not_found/NotFoundPage.jsx';
 import { AdminRoute } from './components/auth/AdminRoute.jsx';
+import { CustomerRoute } from './components/auth/CustomerRoute.jsx';
 import { AdminPage } from './pages/admin/AdminPage.jsx';
 
 function App() {
@@ -28,6 +29,13 @@ function App() {
 
   const loadCart = useCallback(async (userOverride) => {
     const user = userOverride !== undefined ? userOverride : currentUserRef.current;
+
+    // Administrators must not query customer cart endpoints
+    if (user?.role === 'admin') {
+      setCart([]);
+      setCartMeta({ subtotalPaise: 0, totalQuantity: 0 });
+      return;
+    }
 
     if (user) {
       // Authenticated customer: load from server cart
@@ -60,7 +68,11 @@ function App() {
     }
   }, []);
 
-  const migrateGuestCartToServer = useCallback(async () => {
+  const migrateGuestCartToServer = useCallback(async (userOverride) => {
+    const user = userOverride !== undefined ? userOverride : currentUserRef.current;
+    // Administrators must not migrate customer guest carts
+    if (user?.role === 'admin') return;
+
     try {
       const rawGuestItems = getGuestCart();
       if (!rawGuestItems || rawGuestItems.length === 0) return;
@@ -90,8 +102,13 @@ function App() {
       const res = await authApi.getCurrentUser();
       const user = res?.user || null;
       if (user) {
-        await migrateGuestCartToServer();
-        await loadCart(user);
+        if (user.role !== 'admin') {
+          await migrateGuestCartToServer(user);
+          await loadCart(user);
+        } else {
+          setCart([]);
+          setCartMeta({ subtotalPaise: 0, totalQuantity: 0 });
+        }
         setCurrentUser(user);
         currentUserRef.current = user;
       } else {
@@ -114,8 +131,13 @@ function App() {
 
   const handleAuthChange = useCallback(async (user) => {
     if (user) {
-      await migrateGuestCartToServer();
-      await loadCart(user);
+      if (user.role !== 'admin') {
+        await migrateGuestCartToServer(user);
+        await loadCart(user);
+      } else {
+        setCart([]);
+        setCartMeta({ subtotalPaise: 0, totalQuantity: 0 });
+      }
       setCurrentUser(user);
       currentUserRef.current = user;
     } else {
@@ -130,80 +152,120 @@ function App() {
       <Route
         path="/"
         element={
-          <HomePage
-            cart={cart}
-            loadCart={loadCart}
-            currentUser={currentUser}
-            authLoading={authLoading}
-            onAuthChange={handleAuthChange}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <HomePage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              authLoading={authLoading}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
         }
       />
       <Route
         path="product/:productId"
         element={
-          <ProductDetailPage
-            cart={cart}
-            loadCart={loadCart}
-            currentUser={currentUser}
-            onAuthChange={handleAuthChange}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <ProductDetailPage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
+        }
+      />
+      <Route
+        path="products/:productId"
+        element={
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <ProductDetailPage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
+        }
+      />
+      <Route
+        path="products/*"
+        element={
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <ProductDetailPage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
         }
       />
       <Route
         path="cart"
         element={
-          <CartPage
-            cart={cart}
-            loadCart={loadCart}
-            currentUser={currentUser}
-            authLoading={authLoading}
-            onAuthChange={handleAuthChange}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <CartPage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              authLoading={authLoading}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
         }
       />
       <Route
         path="checkout"
         element={
-          <CheckoutPage
-            cart={cart}
-            cartMeta={cartMeta}
-            loadCart={loadCart}
-            currentUser={currentUser}
-            authLoading={authLoading}
-            onAuthChange={handleAuthChange}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <CheckoutPage
+              cart={cart}
+              cartMeta={cartMeta}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              authLoading={authLoading}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
         }
       />
       <Route
         path="orders"
         element={
-          <OrdersPage
-            cart={cart}
-            loadCart={loadCart}
-            currentUser={currentUser}
-            onAuthChange={handleAuthChange}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <OrdersPage
+              cart={cart}
+              loadCart={loadCart}
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
         }
       />
       <Route
         path="tracking/:orderId/:productId"
         element={
-          <TrackingPage
-            cart={cart}
-            currentUser={currentUser}
-            onAuthChange={handleAuthChange}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <TrackingPage
+              cart={cart}
+              currentUser={currentUser}
+              onAuthChange={handleAuthChange}
+            />
+          </CustomerRoute>
         }
       />
       <Route
         path="payment"
         element={
-          <PaymentPage
-            cart={cart}
-            cartMeta={cartMeta}
-            loadCart={loadCart}
-          />
+          <CustomerRoute currentUser={currentUser} authLoading={authLoading}>
+            <PaymentPage
+              cart={cart}
+              cartMeta={cartMeta}
+              loadCart={loadCart}
+            />
+          </CustomerRoute>
         }
       />
       <Route
@@ -243,3 +305,4 @@ function App() {
 }
 
 export default App;
+

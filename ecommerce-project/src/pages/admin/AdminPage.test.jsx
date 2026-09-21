@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { AdminPage } from './AdminPage.jsx';
@@ -102,17 +102,22 @@ describe('AdminPage Component — Nexora Commerce Operations Console (Phase 07.2
     vi.clearAllMocks();
   });
 
-  it('renders Nexora Admin heading, admin full name, role, and navigation tabs', async () => {
+  it('renders Nexora Admin heading, navigation tabs, and accessible profile menu without Storefront button', async () => {
+    const user = userEvent.setup();
+
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <AdminPage currentUser={adminUser} onAuthChange={vi.fn()} />
       </MemoryRouter>
     );
 
+    // Brand and console indicator
     expect(screen.getByRole('heading', { level: 1, name: /nexora admin/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Nexora System Administrator/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/admin/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('link', { name: /return to storefront catalog/i })).toHaveAttribute('href', '/');
+    expect(screen.getByText(/console/i)).toBeInTheDocument();
+
+    // Storefront link MUST NOT exist anywhere
+    expect(screen.queryByRole('link', { name: /storefront/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /storefront/i })).not.toBeInTheDocument();
 
     // Navigation tabs
     expect(screen.getByRole('button', { name: /^overview$/i })).toBeInTheDocument();
@@ -120,6 +125,35 @@ describe('AdminPage Component — Nexora Commerce Operations Console (Phase 07.2
     expect(screen.getByRole('button', { name: /^inventory$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^products$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^audit logs$/i })).toBeInTheDocument();
+
+    // Profile button exists with accessible label
+    const profileBtn = screen.getByRole('button', { name: /open admin profile menu/i });
+    expect(profileBtn).toBeInTheDocument();
+    expect(profileBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Sign Out is initially NOT visible
+    expect(screen.queryByRole('menuitem', { name: /sign out/i })).not.toBeInTheDocument();
+
+    // Open profile menu
+    await user.click(profileBtn);
+    expect(profileBtn).toHaveAttribute('aria-expanded', 'true');
+
+    // Admin info inside dropdown
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getByText('Nexora System Administrator')).toBeInTheDocument();
+    expect(within(menu).getByText('admin@nexora.local')).toBeInTheDocument();
+    expect(within(menu).getByText('ADMIN')).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
+
+    // Close on outside click
+    await user.click(document.body);
+    expect(screen.queryByRole('menuitem', { name: /sign out/i })).not.toBeInTheDocument();
+
+    // Reopen and close with Escape
+    await user.click(profileBtn);
+    expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menuitem', { name: /sign out/i })).not.toBeInTheDocument();
   });
 
   it('renders Commerce Operations Overview with authoritative backend-derived metrics', async () => {
@@ -197,7 +231,11 @@ describe('AdminPage Component — Nexora Commerce Operations Console (Phase 07.2
       </MemoryRouter>
     );
 
-    const logoutBtn = screen.getByRole('button', { name: /sign out of administrative session/i });
+    // Open profile menu
+    const profileBtn = screen.getByRole('button', { name: /open admin profile menu/i });
+    await user.click(profileBtn);
+
+    const logoutBtn = screen.getByRole('menuitem', { name: /sign out/i });
     await user.click(logoutBtn);
 
     expect(authApi.logout).toHaveBeenCalled();

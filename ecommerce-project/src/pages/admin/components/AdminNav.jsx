@@ -1,8 +1,10 @@
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 
 /**
- * AdminNav Component (Phase 07.26B)
+ * AdminNav Component (Phase 07.26D)
  * Administrative header and navigation bar adhering to Architectural Editorial Commerce.
+ * Features strict role separation, complete removal of storefront links, and an accessible admin profile menu.
  */
 export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
   const tabs = [
@@ -12,6 +14,32 @@ export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
     { id: 'products', label: 'Products', path: '/admin/products' },
     { id: 'audit', label: 'Audit Logs', path: '/admin/audit-logs' },
   ];
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isProfileOpen) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    const handleClickOutside = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
   return (
     <header className="nx-admin-header" role="banner">
@@ -41,25 +69,69 @@ export function AdminNav({ activeTab, onSelectTab, currentUser, onLogout }) {
           })}
         </nav>
 
-        <div className="nx-admin-user-bar">
-          <div className="nx-admin-user-info">
-            <span className="nx-admin-user-name">{currentUser?.full_name || 'Administrator'}</span>
-            <span className="nx-admin-role-tag">role: {currentUser?.role || 'admin'}</span>
-          </div>
-
-          <nav className="nx-admin-header-nav" aria-label="Administrative header navigation">
-            <Link to="/" className="nx-admin-nav-link" aria-label="Return to Storefront Catalog">
-              Storefront
-            </Link>
-            <button
-              type="button"
-              className="nx-admin-logout-btn"
-              onClick={onLogout}
-              aria-label="Sign out of administrative session"
+        <div className="nx-admin-profile-container" ref={profileMenuRef}>
+          <button
+            type="button"
+            className={`nx-admin-profile-btn ${isProfileOpen ? 'is-active' : ''}`}
+            onClick={() => setIsProfileOpen((prev) => !prev)}
+            aria-expanded={isProfileOpen}
+            aria-haspopup="menu"
+            aria-label="Open admin profile menu"
+            id="admin-profile-menu-btn"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
             >
-              Sign Out
-            </button>
-          </nav>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </button>
+
+          {isProfileOpen && (
+            <div className="nx-admin-profile-dropdown" role="menu" aria-labelledby="admin-profile-menu-btn">
+              <div className="nx-admin-profile-header">
+                <div className="nx-admin-profile-name">{currentUser?.full_name || 'Administrator'}</div>
+                <div className="nx-admin-profile-email">{currentUser?.email || 'admin@nexora.local'}</div>
+                <div className="nx-admin-profile-role-badge">ADMIN</div>
+              </div>
+              <div className="nx-admin-profile-divider" role="separator" />
+              <button
+                type="button"
+                className="nx-admin-profile-logout-btn"
+                role="menuitem"
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  onLogout();
+                }}
+                aria-label="Sign out of administrative session"
+              >
+                <span>Sign Out</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

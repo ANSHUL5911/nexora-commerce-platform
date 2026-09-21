@@ -98,69 +98,121 @@
   border-bottom-color: var(--color-accent-primary, #121212);
 }
 
-.nx-admin-user-bar {
+/* ------------------------------------------------------------
+   Header Admin Profile Menu (Phase 07.26D)
+   ------------------------------------------------------------ */
+.nx-admin-profile-container {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-5, 1.25rem);
   flex-shrink: 0;
 }
 
-.nx-admin-user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.nx-admin-user-name {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-primary, #121212);
-}
-
-.nx-admin-role-tag {
-  font-family: var(--font-mono, monospace);
-  font-size: 0.6875rem;
-  color: var(--color-text-muted, #787875);
-}
-
-.nx-admin-header-nav {
+.nx-admin-profile-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  color: var(--color-text-secondary, #525250);
   display: flex;
   align-items: center;
-  gap: var(--space-3, 0.75rem);
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
 }
 
-.nx-admin-nav-link {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--color-text-secondary, #525250);
-  text-decoration: none;
-  padding: 6px 10px;
-  border: 1px solid var(--color-border-subtle, #EAE9E5);
-  border-radius: var(--radius-sm, 4px);
-  background-color: var(--color-surface, #FFFFFF);
-  transition: border-color 150ms ease, color 150ms ease;
-}
-
-.nx-admin-nav-link:hover {
+.nx-admin-profile-btn:hover,
+.nx-admin-profile-btn.is-active {
   border-color: var(--color-border-strong, #D1D0CB);
   color: var(--color-text-primary, #121212);
+  background-color: var(--color-surface-subtle, #F4F3F0);
 }
 
-.nx-admin-logout-btn {
+.nx-admin-profile-btn:focus-visible {
+  outline: 2px solid var(--color-accent-primary, #121212);
+  outline-offset: 2px;
+}
+
+.nx-admin-profile-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 250px;
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: var(--space-4, 1rem);
+  z-index: 100;
+  text-align: left;
+}
+
+.nx-admin-profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.nx-admin-profile-name {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #121212);
+  line-height: 1.25;
+}
+
+.nx-admin-profile-email {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #787875);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.nx-admin-profile-role-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background-color: var(--color-surface-subtle, #F4F3F0);
+  border: 1px solid var(--color-border-strong, #D1D0CB);
+  color: var(--color-text-secondary, #525250);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs, 2px);
+}
+
+.nx-admin-profile-divider {
+  height: 1px;
+  background-color: var(--color-border-subtle, #EAE9E5);
+  margin: var(--space-3, 0.75rem) 0;
+}
+
+.nx-admin-profile-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  font-family: var(--font-body, 'Inter', sans-serif);
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-status-error, #9E1C1C);
-  background: none;
-  border: 1px solid transparent;
-  padding: 6px 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm, 4px);
   cursor: pointer;
   transition: background-color 150ms ease;
 }
 
-.nx-admin-logout-btn:hover {
+.nx-admin-profile-logout-btn:hover {
   background-color: var(--color-status-error-bg, #FDF2F2);
+}
+
+.nx-admin-profile-logout-btn:focus-visible {
+  outline: 2px solid var(--color-status-error, #9E1C1C);
+  outline-offset: 1px;
 }
 
 /* ------------------------------------------------------------
