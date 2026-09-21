@@ -1,4 +1,5 @@
 import { Navigate, Link } from 'react-router';
+import { Icon } from '../ui/Icon.jsx';
 import './AdminRoute.css';
 
 /**
@@ -35,10 +36,7 @@ export function AdminRoute({ currentUser, authLoading, children }) {
       <main className="nx-admin-denied-screen" role="alert">
         <div className="nx-admin-denied-card">
           <div className="nx-admin-denied-icon" aria-hidden="true">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+            <Icon name="Lock" size={40} strokeWidth={1.5} />
           </div>
           <h1 className="nx-admin-denied-title">Access Denied</h1>
           <p className="nx-admin-denied-message">

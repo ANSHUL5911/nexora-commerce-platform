@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/react';
+
+configure({ asyncUtilTimeout: 4000 });
 
 // Polyfill window.matchMedia for JSDOM
 if (typeof window !== 'undefined') {

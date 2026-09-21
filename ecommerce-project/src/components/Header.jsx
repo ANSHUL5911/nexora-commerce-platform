@@ -3,6 +3,7 @@ import { NavLink, useSearchParams, useNavigate, useLocation } from 'react-router
 import { AuthModal } from './auth/AuthModal.jsx';
 import { authApi } from '../api/auth.js';
 import { getAuthRedirectPath } from '../utils/authRedirect.js';
+import { Icon } from './ui/Icon.jsx';
 import './Header.css';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -177,10 +178,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
                 onChange={(e) => setSearchInput(e.target.value)}
               />
               <button type="submit" className="nx-search-btn" aria-label="Submit search">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
+                <Icon name="Search" size={16} aria-hidden="true" />
               </button>
             </form>
           )}
@@ -218,10 +216,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
                   aria-expanded={isUserDropdownOpen}
                   aria-haspopup="true"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
+                  <Icon name="User" size={14} aria-hidden="true" />
                   <span>{currentUser.full_name?.split(' ')[0] || 'Account'}</span>
                 </button>
 
@@ -272,7 +267,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
             aria-expanded={isMobileMenuOpen}
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           >
-            {isMobileMenuOpen ? '✕' : '☰'}
+            <Icon name={isMobileMenuOpen ? 'X' : 'Menu'} size={18} aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -291,10 +286,7 @@ export function Header({ cart = [], currentUser: propUser, onAuthChange }) {
                 onChange={(e) => setSearchInput(e.target.value)}
               />
               <button type="submit" className="nx-search-btn" aria-label="Submit search">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
+                <Icon name="Search" size={16} aria-hidden="true" />
               </button>
             </form>
           )}
