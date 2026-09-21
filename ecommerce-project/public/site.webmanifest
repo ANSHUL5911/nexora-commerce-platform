@@ -1,0 +1,16 @@
+{
+  "name": "Nexora Commerce Registry",
+  "short_name": "Nexora",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#F9F9F8",
+  "background_color": "#F9F9F8",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
+}
