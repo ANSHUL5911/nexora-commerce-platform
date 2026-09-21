@@ -1,5 +1,5 @@
 # ============================================================
-# Nexora Commerce Platform — Git Ignore
+# Nexora Commerce Platform â€” Git Ignore
 # ============================================================
 
 # Environment / secrets
@@ -46,3 +46,10 @@ temp/
 .npm/
 .eslintcache
 .cache/
+
+# ============================================================
+# Local AI coding-agent tooling
+# ============================================================
+
+.agents/
+skills-lock.json
