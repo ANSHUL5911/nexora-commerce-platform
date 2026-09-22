@@ -2,16 +2,34 @@ import { useState, useEffect } from 'react';
 import { normalizeProductImage, ARCHITECTURAL_PLACEHOLDER_SVG } from '../../utils/media.js';
 
 /**
+ * Returns AVIF and WebP source paths for local product imagery.
+ */
+function getResponsiveSources(src) {
+  if (!src || typeof src !== 'string') return null;
+  if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) return null;
+  const match = src.match(/^(\/images\/products\/[^.]+)\.(jpg|jpeg|png)$/i);
+  if (match) {
+    const basePath = match[1];
+    return {
+      avif: `${basePath}.avif`,
+      webp: `${basePath}.webp`,
+    };
+  }
+  return null;
+}
+
+/**
  * SafeImage Component for Nexora Commerce.
  * Guarantees zero layout shift (CLS), zero broken image icons,
- * proper asynchronous decoding, and graceful fallback to architectural vector SVG.
+ * proper asynchronous decoding, modern picture/AVIF/WebP responsive sources,
+ * and graceful fallback to architectural vector SVG.
  */
 export function SafeImage({
   src,
   alt = '',
   category = '',
-  width,
-  height,
+  width = 600,
+  height = 750,
   loading = 'lazy',
   decoding = 'async',
   className = '',
@@ -45,7 +63,9 @@ export function SafeImage({
     onLoad?.(e);
   };
 
-  return (
+  const responsiveSources = !hasError ? getResponsiveSources(currentSrc) : null;
+
+  const imgElement = (
     <img
       src={currentSrc}
       alt={alt}
@@ -57,7 +77,9 @@ export function SafeImage({
       style={{
         display: 'block',
         maxWidth: '100%',
-        height: height || 'auto',
+        height: height ? `${height}px` : 'auto',
+        aspectRatio: `${width}/${height}`,
+        objectFit: 'cover',
         ...style,
       }}
       onError={handleError}
@@ -65,6 +87,18 @@ export function SafeImage({
       {...rest}
     />
   );
+
+  if (responsiveSources) {
+    return (
+      <picture className="nx-safe-picture" style={{ display: 'block', maxWidth: '100%' }}>
+        <source type="image/avif" srcSet={responsiveSources.avif} />
+        <source type="image/webp" srcSet={responsiveSources.webp} />
+        {imgElement}
+      </picture>
+    );
+  }
+
+  return imgElement;
 }
 
 export default SafeImage;

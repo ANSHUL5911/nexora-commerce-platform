@@ -7,7 +7,7 @@ export function NotFoundPage({ cart, currentUser, onAuthChange }) {
   return (
     <>
       <Header cart={cart} currentUser={currentUser} onAuthChange={onAuthChange} />
-      <main className="not-found-page">
+      <main className="not-found-page" id="main-content" tabIndex="-1">
         <div className="not-found-content">
           <div className="not-found-code">404</div>
           <h1 className="not-found-title">Page Not Found</h1>

@@ -143,7 +143,7 @@ export function ProductDetailPage({ cart, loadCart, currentUser, onAuthChange })
       />
       <Header cart={cart} currentUser={currentUser} onAuthChange={onAuthChange} />
 
-      <main className="pdp-container">
+      <main className="pdp-container" id="main-content" tabIndex="-1">
         <nav className="pdp-breadcrumb" aria-label="Breadcrumb">
           <Link to="/">Catalog</Link>
           <span aria-hidden="true">/</span>

@@ -108,7 +108,7 @@ export function OrdersPage({ cart, loadCart, currentUser, onAuthChange }) {
     <>
       <Header cart={cart} currentUser={currentUser} onAuthChange={onAuthChange} />
 
-      <main className="orders-page">
+      <main className="orders-page" id="main-content" tabIndex="-1">
         <header className="orders-page-header">
           <h1 className="orders-page-title">Order History</h1>
         </header>

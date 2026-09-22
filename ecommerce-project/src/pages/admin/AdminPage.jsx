@@ -68,7 +68,7 @@ export function AdminPage({ currentUser, onAuthChange }) {
       />
 
       {/* Main Operations Canvas */}
-      <main className="nx-admin-main" id="admin-main-content">
+      <main className="nx-admin-main" id="main-content" tabIndex="-1">
         <div className="nx-admin-container">
           {activeTab === 'overview' && (
             <AdminOverview

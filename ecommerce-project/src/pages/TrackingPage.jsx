@@ -68,7 +68,7 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
     return (
       <>
         <Header cart={cart} currentUser={currentUser} onAuthChange={onAuthChange} />
-        <main className="tracking-page">
+        <main className="tracking-page" id="main-content" tabIndex="-1">
           <div className="tracking-card" style={{ textAlign: 'center', padding: 'var(--space-12) var(--space-6)' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '8px' }}>Tracking Record Unavailable</h2>
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: '20px' }}>{error || 'The requested order could not be located.'}</p>
@@ -123,7 +123,7 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
     <>
       <Header cart={cart} currentUser={currentUser} onAuthChange={onAuthChange} />
 
-      <main className="tracking-page">
+      <main className="tracking-page" id="main-content" tabIndex="-1">
         <div style={{ marginBottom: 'var(--space-4)' }}>
           <Link to="/orders" className="link-primary" style={{ fontSize: 'var(--text-sm)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             ← Back to Order History

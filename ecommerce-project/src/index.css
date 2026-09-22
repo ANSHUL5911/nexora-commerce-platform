@@ -1,3 +1,5 @@
+@import './styles/fonts.css';
+
 :root {
   /* Canvas & Surfaces */
   --color-canvas: #F9F9F8;
