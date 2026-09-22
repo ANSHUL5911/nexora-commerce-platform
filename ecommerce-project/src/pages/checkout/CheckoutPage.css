@@ -300,9 +300,35 @@
 }
 
 .reservation-notice.is-active-timer {
+  position: relative;
   background-color: var(--color-status-success-bg, #EDF7F2);
-  border-color: var(--color-status-success, #0D5F3A);
+  border: 1px solid var(--color-status-success, #0D5F3A);
   color: var(--color-status-success, #0D5F3A);
+  box-shadow: 0 0 0 1px rgba(13, 95, 58, 0.15);
+}
+
+.reservation-notice.is-active-timer::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-sm, 4px);
+  padding: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-status-success, #0D5F3A) 50%, transparent 100%);
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderTrace 3s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes borderTrace {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .notice-dot {
@@ -311,6 +337,30 @@
   border-radius: 50%;
   background-color: var(--color-status-success, #0D5F3A);
   display: inline-block;
+  flex-shrink: 0;
+}
+
+.reservation-notice.is-active-timer .notice-dot {
+  animation: pulseNoticeDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseNoticeDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reservation-notice.is-active-timer::before,
+  .reservation-notice.is-active-timer .notice-dot {
+    animation: none;
+    background: none;
+  }
 }
 
 .countdown-time {
