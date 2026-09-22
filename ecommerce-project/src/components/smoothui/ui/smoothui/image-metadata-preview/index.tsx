@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronUp, CircleX, Share } from "lucide-react";
+import { ChevronUp, CircleX, Share2 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useMeasure from "react-use-measure";
+import "./ImageMetadataPreview.css";
 
 export interface ImageMetadata {
   by: string;
@@ -29,166 +30,119 @@ export default function ImageMetadataPreview({
   metadata,
   onShare,
 }: ImageMetadataPreviewProps) {
-  const [openInfo, setopenInfo] = useState(false);
-  const [isHoverDevice, setIsHoverDevice] = useState(false);
+  const [openInfo, setOpenInfo] = useState(false);
   const [elementRef, bounds] = useMeasure();
   const shouldReduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-    setIsHoverDevice(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsHoverDevice(e.matches);
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  const handleClickOpen = () => {
-    setopenInfo((b) => !b);
-  };
-
-  const handleClickClose = () => {
-    setopenInfo((b) => !b);
+  const handleToggleInfo = () => {
+    setOpenInfo((prev) => !prev);
   };
 
   return (
-    <div className="absolute bottom-10 flex flex-col items-center justify-center gap-4">
+    <div className="nx-imp-root">
       <motion.div
-        animate={shouldReduceMotion ? {} : { y: -bounds.height }}
-        className="pointer-events-none overflow-hidden rounded-xl"
-        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25 }}
+        animate={shouldReduceMotion ? {} : { y: openInfo ? -bounds.height : 0 }}
+        className="nx-imp-image-card"
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       >
         <img
           alt={alt}
           draggable={false}
-          height={437}
+          height={340}
+          width={280}
           src={imageSrc}
-          width={300}
+          className="nx-imp-image"
         />
       </motion.div>
 
-      <div className="relative flex w-full flex-col items-center gap-4">
-        <div className="relative flex w-full flex-row items-center justify-center gap-4">
+      <div className="nx-imp-controls-group">
+        <div className="nx-imp-action-bar">
           <button
-            aria-label="Share"
-            className={`min-h-[44px] min-w-[44px] rounded-full border bg-background p-3 transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              isHoverDevice ? "hover:bg-muted" : ""
-            }`}
+            aria-label="Share specimen dossier"
+            className="nx-imp-btn"
             disabled={!onShare}
             onClick={onShare}
             type="button"
           >
-            <Share aria-hidden="true" size={16} />
+            <Share2 aria-hidden="true" size={16} />
           </button>
           <button
-            aria-label="Connect"
-            className="min-h-[44px] cursor-not-allowed rounded-full border bg-background px-4 py-3 text-sm transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+            aria-label="Archival record status"
+            className="nx-imp-btn nx-imp-btn--status"
             disabled
             type="button"
           >
-            Connect
+            Verified Artifact
           </button>
           <AnimatePresence>
-            {openInfo ? null : (
+            {!openInfo && (
               <motion.button
-                animate={
-                  shouldReduceMotion
-                    ? { opacity: 1 }
-                    : { filter: "blur(0px)", opacity: 1 }
-                }
+                animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
                 aria-label="Open Metadata Preview"
-                className={`min-h-[44px] min-w-[44px] border bg-background p-3 shadow-xs transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                  isHoverDevice ? "hover:bg-muted" : ""
-                }`}
-                initial={
-                  shouldReduceMotion
-                    ? { opacity: 1 }
-                    : { filter: "blur(4px)", opacity: 0 }
-                }
-                onClick={handleClickOpen}
-                style={{ borderRadius: 100 }}
-                transition={
-                  shouldReduceMotion ? { duration: 0 } : { duration: 0.2 }
-                }
+                className="nx-imp-btn"
+                initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.9 }}
+                exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                onClick={handleToggleInfo}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2 }}
+                type="button"
               >
                 <ChevronUp aria-hidden="true" size={16} />
               </motion.button>
             )}
           </AnimatePresence>
         </div>
+
         <AnimatePresence>
-          {openInfo ? (
+          {openInfo && (
             <motion.div
-              animate={
-                shouldReduceMotion
-                  ? { opacity: 1 }
-                  : { filter: "blur(0px)", opacity: 1 }
-              }
-              className="absolute bottom-0 w-full cursor-pointer gap-4 border bg-background p-5 shadow-xs"
-              initial={
-                shouldReduceMotion
-                  ? { opacity: 1 }
-                  : { filter: "blur(4px)", opacity: 0 }
-              }
-              onClick={handleClickClose}
-              style={{ borderRadius: 20 }}
+              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              className="nx-imp-drawer"
+              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 12 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
               transition={
                 shouldReduceMotion
                   ? { duration: 0 }
-                  : { bounce: 0, duration: 0.25, type: "spring" as const }
+                  : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }
               }
             >
-              <div className="flex flex-col items-start" ref={elementRef}>
-                <div className="flex w-full flex-row items-start justify-between gap-4">
+              <div ref={elementRef}>
+                <div className="nx-imp-drawer-header">
                   <div>
-                    <p className="text-foreground">{filename}</p>
-                    <p className="text-primary-foreground">{description}</p>
+                    <h4 className="nx-imp-filename">{filename}</h4>
+                    <p className="nx-imp-description">{description}</p>
                   </div>
 
                   <button
                     aria-label="Close metadata preview"
-                    className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded p-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      isHoverDevice ? "hover:bg-muted" : ""
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClickClose();
-                    }}
+                    className="nx-imp-close-btn"
+                    onClick={handleToggleInfo}
                     type="button"
                   >
-                    <CircleX aria-hidden="true" size={16} />
+                    <CircleX aria-hidden="true" size={18} />
                   </button>
                 </div>
-                <table className="flex w-full flex-col items-center gap-4 text-foreground">
-                  <tbody className="w-full">
-                    <tr className="flex w-full flex-row items-center gap-4">
-                      <td className="w-1/2">Created</td>
-                      <td className="w-1/2 text-primary-foreground">
-                        {metadata.created}
-                      </td>
-                    </tr>
-                    <tr className="flex w-full flex-row items-center gap-4">
-                      <td className="w-1/2">Updated</td>
-                      <td className="w-1/2 text-primary-foreground">
-                        {metadata.updated}
-                      </td>
-                    </tr>
-                    <tr className="flex w-full flex-row items-center gap-4">
-                      <td className="w-1/2">By</td>
-                      <td className="w-1/2">{metadata.by}</td>
-                    </tr>
-                    <tr className="flex w-full flex-row items-center gap-4">
-                      <td className="w-1/2">Source</td>
-                      <td className="w-1/2 truncate">{metadata.source}</td>
-                    </tr>
-                  </tbody>
-                </table>
+
+                <dl className="nx-imp-meta-list">
+                  <div className="nx-imp-meta-row">
+                    <dt className="nx-imp-meta-label">Created</dt>
+                    <dd className="nx-imp-meta-value">{metadata.created}</dd>
+                  </div>
+                  <div className="nx-imp-meta-row">
+                    <dt className="nx-imp-meta-label">Updated</dt>
+                    <dd className="nx-imp-meta-value">{metadata.updated}</dd>
+                  </div>
+                  <div className="nx-imp-meta-row">
+                    <dt className="nx-imp-meta-label">By</dt>
+                    <dd className="nx-imp-meta-value">{metadata.by}</dd>
+                  </div>
+                  <div className="nx-imp-meta-row">
+                    <dt className="nx-imp-meta-label">Source</dt>
+                    <dd className="nx-imp-meta-value" title={metadata.source}>{metadata.source}</dd>
+                  </div>
+                </dl>
               </div>
             </motion.div>
-          ) : null}
+          )}
         </AnimatePresence>
       </div>
     </div>

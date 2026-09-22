@@ -1,40 +1,10 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { cn } from "@/lib/utils";
-import { cva, type VariantProps } from "class-variance-authority";
 import { motion, useReducedMotion, useSpring } from "motion/react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const magneticButtonVariants = cva(
-  "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-  {
-    defaultVariants: {
-      size: "default",
-      variant: "default",
-    },
-    variants: {
-      size: {
-        default: "h-10 px-4 py-2",
-        icon: "h-10 w-10",
-        lg: "h-11 rounded-md px-8",
-        sm: "h-9 rounded-md px-3",
-      },
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-foreground underline-offset-4 hover:underline",
-        outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-      },
-    },
-  }
-);
+import "../../../../unlumen-ui/primitives/magnetic-button.css";
 
 export type MagneticButtonProps = {
   children: ReactNode;
@@ -44,8 +14,9 @@ export type MagneticButtonProps = {
   disabled?: boolean;
   asChild?: boolean;
   className?: string;
-} & ButtonHTMLAttributes<HTMLButtonElement> &
-  VariantProps<typeof magneticButtonVariants>;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+} & ButtonHTMLAttributes<HTMLButtonElement>;
 
 const MagneticButton = ({
   children,
@@ -54,9 +25,9 @@ const MagneticButton = ({
   springConfig = { bounce: 0.1, duration: 0.4 },
   disabled = false,
   asChild = false,
-  variant,
-  size,
-  className,
+  variant = "default",
+  size = "default",
+  className = "",
   ...props
 }: MagneticButtonProps) => {
   const shouldReduceMotion = useReducedMotion();
@@ -121,23 +92,23 @@ const MagneticButton = ({
   }, [x, y]);
 
   const Comp = asChild ? Slot : "button";
+  const buttonClasses = `nx-mag-btn nx-mag-btn--${variant} nx-mag-btn--size-${size} ${className}`.trim();
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: Mouse events are for visual effect, not interaction
     <div
-      className="inline-block"
+      style={{
+        display: "inline-block",
+        margin: `-${radius / 2}px`,
+        padding: `${radius / 2}px`,
+      }}
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
       ref={wrapperRef}
       role="presentation"
-      style={{
-        margin: `-${radius / 2}px`,
-        padding: `${radius / 2}px`,
-      }}
     >
       <motion.div style={{ x, y }}>
         <Comp
-          className={cn(magneticButtonVariants({ className, size, variant }))}
+          className={buttonClasses}
           disabled={disabled}
           ref={buttonRef}
           type="button"

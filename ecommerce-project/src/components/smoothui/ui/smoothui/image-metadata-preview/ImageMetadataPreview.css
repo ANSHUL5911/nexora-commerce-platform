@@ -1,0 +1,194 @@
+/* Scoped Architectural Styling for ImageMetadataPreview */
+.nx-imp-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4, 16px);
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.nx-imp-image-card {
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: var(--radius-lg, 8px);
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  background: var(--color-surface-subtle, #F4F3F0);
+  box-shadow: var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.05));
+}
+
+.nx-imp-image {
+  max-height: 340px;
+  width: auto;
+  max-width: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nx-imp-controls-group {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4, 16px);
+}
+
+.nx-imp-action-bar {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3, 12px);
+}
+
+.nx-imp-btn {
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  background: var(--color-surface, #FFFFFF);
+  color: var(--color-text-primary, #121212);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.nx-imp-btn:hover:not(:disabled) {
+  background: var(--color-surface-subtle, #F4F3F0);
+  border-color: var(--color-border-strong, #D1D0CB);
+}
+
+.nx-imp-btn:focus-visible {
+  outline: 2px solid var(--color-border-focus, #121212);
+  outline-offset: 2px;
+}
+
+.nx-imp-btn--status {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs, 0.75rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #5F5E5B);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.nx-imp-drawer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  cursor: default;
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  background: var(--color-surface, #FFFFFF);
+  padding: var(--space-5, 20px);
+  border-radius: var(--radius-lg, 8px);
+  box-shadow: var(--shadow-elevated, 0 4px 16px rgba(0, 0, 0, 0.08));
+  z-index: 20;
+}
+
+.nx-imp-drawer-header {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+  padding-bottom: var(--space-3, 12px);
+  border-bottom: 1px solid var(--color-border-subtle, #EAE9E5);
+}
+
+.nx-imp-filename {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--color-text-primary, #121212);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.nx-imp-description {
+  font-family: var(--font-body, sans-serif);
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text-secondary, #525250);
+  margin: var(--space-1, 4px) 0 0 0;
+  line-height: 1.4;
+}
+
+.nx-imp-close-btn {
+  display: flex;
+  min-height: 36px;
+  min-width: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary, #525250);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nx-imp-close-btn:hover {
+  background: var(--color-surface-subtle, #F4F3F0);
+  color: var(--color-text-primary, #121212);
+}
+
+.nx-imp-close-btn:focus-visible {
+  outline: 2px solid var(--color-border-focus, #121212);
+  outline-offset: 2px;
+}
+
+.nx-imp-meta-list {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.nx-imp-meta-row {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2, 8px) 0;
+  border-bottom: 1px dashed var(--color-border-subtle, #EAE9E5);
+}
+
+.nx-imp-meta-row:last-child {
+  border-bottom: none;
+}
+
+.nx-imp-meta-label {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted, #5F5E5B);
+}
+
+.nx-imp-meta-value {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
+  color: var(--color-text-primary, #121212);
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

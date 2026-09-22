@@ -1,52 +1,28 @@
 "use client";
 
-import * as React from "react";
-import { motion, useInView } from "motion/react";
-
-import { cn } from "@/lib/utils";
+import { useRef } from "react";
+import { motion, useInView, useReducedMotion } from "motion/react";
 
 export interface TextRevealProps {
-  /** The text to animate. */
   text: string;
-  /**
-   * HTML tag for the container element.
-   * @default "p"
-   */
-  as?: keyof React.JSX.IntrinsicElements;
-  /**
-   * Split mode: word-by-word or character-by-character.
-   * @default "words"
-   */
-  splitBy?: "words" | "characters";
-  /**
-   * Delay between each word/character animation in seconds.
-   * @default 0.05
-   */
-  staggerDelay?: number;
-  /**
-   * Duration of each unit's animation in seconds.
-   * @default 0.5
-   */
-  duration?: number;
-  /**
-   * Trigger the animation only once.
-   * @default true
-   */
-  once?: boolean;
   className?: string;
+  splitBy?: "words" | "characters";
+  staggerDelay?: number;
+  duration?: number;
+  as?: keyof React.JSX.IntrinsicElements;
 }
 
 export function TextReveal({
   text,
-  as: Tag = "p",
+  className = "",
   splitBy = "words",
   staggerDelay = 0.05,
-  duration = 0.5,
-  once = true,
-  className,
+  duration = 0.4,
+  as: Tag = "p",
 }: TextRevealProps) {
-  const ref = React.useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once, margin: "0px 0px -10% 0px" });
+  const ref = useRef<HTMLParagraphElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "0px" });
+  const prefersReduced = useReducedMotion();
 
   const units =
     splitBy === "words"
@@ -61,29 +37,33 @@ export function TextReveal({
   return (
     <AnyTag
       ref={ref}
-      className={cn("leading-relaxed", className)}
-      aria-label={text}
+      className={`nx-text-reveal ${className}`.trim()}
+      style={{ lineHeight: 1.625 }}
     >
-      {units.map((unit, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0.1, filter: "blur(8px)" }}
-          animate={
-            isInView
-              ? { opacity: 1, filter: "blur(0px)" }
-              : { opacity: 0.1, filter: "blur(8px)" }
-          }
-          transition={{
-            duration,
-            delay: i * staggerDelay,
-            ease: "easeOut",
-          }}
-          style={{ display: "inline-block" }}
-          className="will-change-[opacity,filter]"
-        >
-          {unit}
-        </motion.span>
-      ))}
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true">
+        {units.map((unit, i) => (
+          <motion.span
+            key={i}
+            initial={prefersReduced ? { opacity: 1, y: 0 } : { opacity: 1, y: 8 }}
+            animate={
+              isInView || prefersReduced
+                ? { opacity: 1, y: 0 }
+                : { opacity: 1, y: 8 }
+            }
+            transition={{
+              duration: prefersReduced ? 0 : duration,
+              delay: prefersReduced ? 0 : i * staggerDelay,
+              ease: "easeOut",
+            }}
+            style={{ display: "inline-block", willChange: "transform, opacity" }}
+          >
+            {unit}
+          </motion.span>
+        ))}
+      </span>
     </AnyTag>
   );
 }
+
+export default TextReveal;

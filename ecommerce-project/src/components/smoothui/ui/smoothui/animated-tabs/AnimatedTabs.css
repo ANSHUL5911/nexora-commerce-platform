@@ -1,0 +1,110 @@
+/* Scoped Architectural Styling for AnimatedTabs */
+.nx-tabs-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.nx-tabs-container::-webkit-scrollbar {
+  display: none;
+}
+
+.nx-tabs-container--underline {
+  gap: var(--space-2, 8px);
+  border-bottom: 1px solid var(--color-border-subtle, #EAE9E5);
+}
+
+.nx-tabs-container--pill {
+  gap: var(--space-1, 4px);
+  border-radius: 9999px;
+  background: var(--color-surface-subtle, #F4F3F0);
+  padding: 4px;
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+}
+
+.nx-tabs-container--segment {
+  gap: 2px;
+  border-radius: var(--radius-md, 6px);
+  background: var(--color-surface-subtle, #F4F3F0);
+  padding: 4px;
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+}
+
+.nx-tab-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  font-family: var(--font-body, sans-serif);
+  font-size: var(--text-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--color-text-secondary, #525250);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+  z-index: 1;
+}
+
+.nx-tab-button:hover {
+  color: var(--color-text-primary, #121212);
+}
+
+.nx-tab-button:focus-visible {
+  outline: 2px solid var(--color-border-focus, #121212);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.nx-tab-button--active {
+  color: var(--color-text-primary, #121212);
+  font-weight: 600;
+}
+
+.nx-tab-indicator {
+  position: absolute;
+  pointer-events: none;
+}
+
+.nx-tab-indicator--underline {
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent-primary, #121212);
+  border-radius: 1px;
+  z-index: 2;
+}
+
+.nx-tab-indicator--pill {
+  inset: 0;
+  background: var(--color-surface, #FFFFFF);
+  border-radius: 9999px;
+  box-shadow: var(--shadow-subtle, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  z-index: 0;
+}
+
+.nx-tab-indicator--segment {
+  inset: 0;
+  background: var(--color-surface, #FFFFFF);
+  border-radius: var(--radius-sm, 4px);
+  box-shadow: var(--shadow-subtle, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--color-border-subtle, #EAE9E5);
+  z-index: 0;
+}
+
+.nx-tab-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+}
