@@ -170,7 +170,7 @@ describe('Admin Routing & Session Integration (Phase 07.26)', () => {
 
   describe('Allowed Direct URLs for Authenticated Admin (Phase 07.26C)', () => {
     it.each([
-      ['/admin', 'overview', /commerce operations/i],
+      ['/admin', 'overview', /operations console/i],
       ['/admin/orders', 'orders', /order management/i],
       ['/admin/inventory', 'inventory', /inventory operations/i],
       ['/admin/products', 'products', /catalog management/i],

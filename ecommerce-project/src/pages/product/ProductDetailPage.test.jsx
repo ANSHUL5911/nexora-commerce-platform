@@ -87,7 +87,7 @@ describe('ProductDetailPage component', () => {
     const qtySelect = screen.getByLabelText(/select quantity/i);
     await user.selectOptions(qtySelect, '2');
 
-    const addBtn = screen.getByRole('button', { name: /add to cart/i });
+    const addBtn = screen.getByRole('button', { name: /acquire piece/i });
     await user.click(addBtn);
 
     expect(cartApi.addItem).toHaveBeenCalledWith({

@@ -147,7 +147,7 @@ export function normalizeApiError(error) {
       message = 'Too many requests. Please slow down and try again later.';
       code = code === 'UNKNOWN_ERROR' ? 'RATE_LIMITED' : code;
     } else if (status >= 500) {
-      message = 'Unable to connect to Nexora service. Please try again later.';
+      message = 'Ledger Synchrony Interrupted. The connection could not verify state with the backend service. Your session and reservations remain preserved.';
       code = code === 'UNKNOWN_ERROR' ? 'SERVER_ERROR' : code;
     } else {
       message = error?.message || 'Request failed';
@@ -155,6 +155,9 @@ export function normalizeApiError(error) {
   }
 
   const isNetwork = !response;
+  if (isNetwork && (!message || message === 'Network Error')) {
+    message = 'Ledger Synchrony Interrupted. The connection could not verify state with the backend service. Your session and reservations remain preserved.';
+  }
   const normalized = new Error(message);
   normalized.isNormalized = true;
   normalized.isNetworkError = isNetwork;

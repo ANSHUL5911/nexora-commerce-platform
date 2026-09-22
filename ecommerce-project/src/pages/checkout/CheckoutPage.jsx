@@ -227,9 +227,9 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
                 <CheckoutHeader cart={cart} />
                 <main className="checkout-main-container" id="main-content" tabIndex="-1">
                     <div className="empty-checkout-card checkout-auth-gate-card">
-                        <h1 className="empty-title">Sign in to continue</h1>
+                        <h1 className="empty-title">Sign In to Complete Acquisition</h1>
                         <p className="empty-description">
-                            Create an account or sign in to continue to checkout.
+                            Create an account or sign in to complete acquisition.
                         </p>
                         <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', marginTop: 'var(--space-4)' }}>
                             <button
@@ -261,7 +261,7 @@ export function CheckoutPage({ cart = [], loadCart, currentUser, authLoading = f
                     initialMode={authMode}
                     onClose={() => setIsAuthModalOpen(false)}
                     onAuthSuccess={handleAuthSuccess}
-                    subtitle="Create an account or sign in to continue to checkout."
+                    subtitle="Create an account or sign in to complete acquisition."
                 />
             </>
         );

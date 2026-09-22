@@ -10,22 +10,22 @@ export function NotFoundPage({ cart, currentUser, onAuthChange }) {
       <main className="not-found-page" id="main-content" tabIndex="-1">
         <div className="not-found-content">
           <div className="not-found-code">404</div>
-          <h1 className="not-found-title">Page Not Found</h1>
+          <h1 className="not-found-title">Uncharted Coordinate</h1>
           <p className="not-found-message">
-            The architectural surface or object you are attempting to access does not exist or has been relocated.
+            The referenced specimen does not exist in the collection index. Return to the primary archive.
           </p>
           <div className="not-found-actions">
             {currentUser?.role === 'admin' ? (
               <Link to="/admin">
-                <Button variant="primary">Return to Admin Console</Button>
+                <Button variant="primary">Return to Operations Console</Button>
               </Link>
             ) : (
               <>
                 <Link to="/">
-                  <Button variant="primary">Return to Catalog</Button>
+                  <Button variant="primary">Return to Primary Archive</Button>
                 </Link>
                 <Link to="/orders">
-                  <Button variant="secondary">Order History</Button>
+                  <Button variant="secondary">Inspect Order Ledger</Button>
                 </Link>
               </>
             )}

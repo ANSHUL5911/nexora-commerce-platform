@@ -91,7 +91,7 @@ export function PaymentStep({
                             <div className="inline-spinner" aria-hidden="true"></div>
                             <h3 className="reconciliation-heading">Verifying Transaction</h3>
                             <p className="reconciliation-body">
-                                Confirming payment with banking network. Please do not close or refresh this tab...
+                                Establishing cryptographic settlement with banking network... Please do not close or refresh this tab.
                             </p>
                         </div>
                     )}
@@ -106,7 +106,7 @@ export function PaymentStep({
                                     onClick={onRetry}
                                     disabled={isProcessing}
                                 >
-                                    {isProcessing ? 'Initializing Retry...' : `Retry Payment (${formatMoney(totalPaise)})`}
+                                    {isProcessing ? 'Establishing cryptographic settlement with banking network...' : `Retry Settlement via Razorpay (${formatMoney(totalPaise)})`}
                                 </button>
                             ) : (
                                 <button
@@ -115,7 +115,7 @@ export function PaymentStep({
                                     onClick={onPay}
                                     disabled={isProcessing}
                                 >
-                                    {isProcessing ? 'Initializing Secure Session...' : `Pay ${formatMoney(totalPaise)} via Razorpay`}
+                                    {isProcessing ? 'Establishing cryptographic settlement with banking network...' : `Authorize Settlement via Razorpay (${formatMoney(totalPaise)})`}
                                 </button>
                             )}
 

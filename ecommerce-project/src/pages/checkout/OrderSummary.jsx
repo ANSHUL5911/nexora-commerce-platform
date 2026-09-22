@@ -136,7 +136,7 @@ export function OrderSummary({
                                     className="button-primary submit-review-btn"
                                     onClick={onContinue}
                                 >
-                                    Proceed to Payment
+                                    Verify Allocation & Lock Stock
                                 </button>
                             </div>
                         </div>

@@ -92,7 +92,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         expect(screen.getByLabelText(/State/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/PIN Code/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/Phone Number/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Continue to Shipping Method/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Commit Shipping Coordinates/i })).toBeInTheDocument();
     });
 
     it('validates required fields, PIN code, and phone before advancing to Step 2', async () => {
@@ -103,7 +103,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
             </MemoryRouter>
         );
 
-        const continueBtn = screen.getByRole('button', { name: /Continue to Shipping Method/i });
+        const continueBtn = screen.getByRole('button', { name: /Commit Shipping Coordinates/i });
         await user.click(continueBtn);
 
         expect(screen.getByText('Full name is required')).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         // Step 1 should collapse to summary and Step 2 should become active
         expect(screen.getByText('Alex Morgan')).toBeInTheDocument();
         expect(screen.getByText(/123 Residency Road/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Continue to Order Review/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Confirm Dispatch Method/i })).toBeInTheDocument();
     });
 
     it('advances through shipping and review to payment, and completes payment flow', async () => {
@@ -182,20 +182,20 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         await user.type(screen.getByLabelText(/State/i), 'Karnataka');
         await user.type(screen.getByLabelText(/PIN Code/i), '560001');
         await user.type(screen.getByLabelText(/Phone Number/i), '9876543210');
-        await user.click(screen.getByRole('button', { name: /Continue to Shipping Method/i }));
+        await user.click(screen.getByRole('button', { name: /Commit Shipping Coordinates/i }));
 
         // Step 2: Select Express Shipping (₹100.00 / 10000 paise)
         const expressOption = screen.getByLabelText(/Express Delivery/i);
         await user.click(expressOption);
-        await user.click(screen.getByRole('button', { name: /Continue to Order Review/i }));
+        await user.click(screen.getByRole('button', { name: /Confirm Dispatch Method/i }));
 
         // Step 3: Order Review
         expect(screen.getByText('Architectural Linen Shirt')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Proceed to Payment/i })).toBeInTheDocument();
-        await user.click(screen.getByRole('button', { name: /Proceed to Payment/i }));
+        expect(screen.getByRole('button', { name: /Verify Allocation & Lock Stock/i })).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: /Verify Allocation & Lock Stock/i }));
 
         // Step 4: Click Pay (₹4500.00 + ₹100.00 = ₹4600.00)
-        const payButton = screen.getByRole('button', { name: /Pay ₹4600\.00 via Razorpay/i });
+        const payButton = screen.getByRole('button', { name: /Authorize Settlement via Razorpay/i });
         expect(payButton).toBeInTheDocument();
         await user.click(payButton);
 
@@ -308,22 +308,22 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         await user.type(screen.getByLabelText(/State/i), 'Karnataka');
         await user.type(screen.getByLabelText(/PIN Code/i), '560001');
         await user.type(screen.getByLabelText(/Phone Number/i), '9876543210');
-        await user.click(screen.getByRole('button', { name: /Continue to Shipping Method/i }));
-        await user.click(screen.getByRole('button', { name: /Continue to Order Review/i }));
-        await user.click(screen.getByRole('button', { name: /Proceed to Payment/i }));
+        await user.click(screen.getByRole('button', { name: /Commit Shipping Coordinates/i }));
+        await user.click(screen.getByRole('button', { name: /Confirm Dispatch Method/i }));
+        await user.click(screen.getByRole('button', { name: /Verify Allocation & Lock Stock/i }));
 
         // Initial Payment (STANDARD = FREE => ₹4500.00)
-        const payBtn = screen.getByRole('button', { name: /Pay ₹4500\.00 via Razorpay/i });
+        const payBtn = screen.getByRole('button', { name: /Authorize Settlement via Razorpay/i });
         await user.click(payBtn);
 
-        // Error banner should appear with "Retry Payment"
+        // Error banner should appear with "Retry Settlement via Razorpay"
         await waitFor(() => {
             expect(screen.getByText('Payment gateway connection error.')).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /Retry Payment/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Retry Settlement via Razorpay/i })).toBeInTheDocument();
         });
 
         // Execute Retry
-        await user.click(screen.getByRole('button', { name: /Retry Payment/i }));
+        await user.click(screen.getByRole('button', { name: /Retry Settlement via Razorpay/i }));
 
         await waitFor(() => {
             // Assert that retryPayment was called with the existing order ID
@@ -391,17 +391,17 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
         await user.type(screen.getByLabelText(/State/i), 'Karnataka');
         await user.type(screen.getByLabelText(/PIN Code/i), '560001');
         await user.type(screen.getByLabelText(/Phone Number/i), '9876543210');
-        await user.click(screen.getByRole('button', { name: /Continue to Shipping Method/i }));
-        await user.click(screen.getByRole('button', { name: /Continue to Order Review/i }));
-        await user.click(screen.getByRole('button', { name: /Proceed to Payment/i }));
+        await user.click(screen.getByRole('button', { name: /Commit Shipping Coordinates/i }));
+        await user.click(screen.getByRole('button', { name: /Confirm Dispatch Method/i }));
+        await user.click(screen.getByRole('button', { name: /Verify Allocation & Lock Stock/i }));
 
-        const payBtn = screen.getByRole('button', { name: /Pay ₹4500\.00 via Razorpay/i });
+        const payBtn = screen.getByRole('button', { name: /Authorize Settlement via Razorpay/i });
         await user.click(payBtn);
 
         // Should present safe user-facing error and not call verifyPayment
         await waitFor(() => {
             expect(screen.getByText('Secure payment checkout could not be loaded. Please refresh and try again.')).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /Retry Payment/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Retry Settlement via Razorpay/i })).toBeInTheDocument();
         });
 
         expect(paymentsApi.verifyPayment).not.toHaveBeenCalled();
@@ -416,7 +416,7 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
 
         expect(screen.getByText('Verifying Session')).toBeInTheDocument();
         expect(screen.getByText(/Please wait while we verify your authentication status/i)).toBeInTheDocument();
-        expect(screen.queryByText('Sign in to continue')).not.toBeInTheDocument();
+        expect(screen.queryByText('Sign In to Complete Acquisition')).not.toBeInTheDocument();
         expect(checkoutApi.initiateCheckout).not.toHaveBeenCalled();
     });
 
@@ -429,8 +429,8 @@ describe('CheckoutPage Component (Phase 07.15)', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByText('Sign in to continue')).toBeInTheDocument();
-        expect(screen.getByText('Create an account or sign in to continue to checkout.')).toBeInTheDocument();
+        expect(screen.getByText('Sign In to Complete Acquisition')).toBeInTheDocument();
+        expect(screen.getByText('Create an account or sign in to complete acquisition.')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Create Account/i })).toBeInTheDocument();
 

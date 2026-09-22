@@ -101,7 +101,9 @@ export function AdminOverview({ onNavigateTab, onSelectOrder }) {
     <div className="nx-admin-overview-view">
       {/* 1. Authoritative Commerce Operational Metrics */}
       <section className="nx-admin-section" aria-labelledby="metrics-heading">
-        <h2 id="metrics-heading" className="nx-admin-section-heading">Commerce Operations</h2>
+        <h2 id="metrics-heading" className="nx-admin-section-heading">
+          Nexora Operations Console — Real-Time Fiduciary & Inventory Ledger
+        </h2>
         <div className="nx-admin-metrics-row">
           <div className="nx-admin-metric-card">
             <span className="nx-admin-metric-label">Total Products</span>

@@ -185,7 +185,7 @@ describe('CatalogPage component', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('No products found')).toBeInTheDocument();
+    expect(await screen.findByText('No Archival Pieces Indexed')).toBeInTheDocument();
   });
 
   it('browser refresh on /catalog preserves catalog route, search query, and category filter', async () => {

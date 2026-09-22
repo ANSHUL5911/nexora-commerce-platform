@@ -293,7 +293,7 @@ export function ShippingAddressStep({
 
                     <div className="step-actions">
                         <button type="submit" className="button-primary submit-address-btn">
-                            Continue to Shipping Method
+                            Commit Shipping Coordinates
                         </button>
                     </div>
                 </form>

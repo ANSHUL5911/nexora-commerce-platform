@@ -76,7 +76,7 @@ export function ProductDetailPage({ cart, loadCart, currentUser, onAuthChange })
       setAdded(true);
       setTimeout(() => setAdded(false), 2500);
     } catch (err) {
-      console.error('Failed to add to cart:', err);
+      console.error('Failed to acquire piece:', err);
     } finally {
       setAdding(false);
     }
@@ -248,19 +248,19 @@ export function ProductDetailPage({ cart, loadCart, currentUser, onAuthChange })
                     </select>
                   </div>
 
-                  {/* Real Unlumen MagneticButton for the primary Add to Cart CTA */}
+                  {/* Real Unlumen MagneticButton for the primary Acquire Piece CTA */}
                   <MagneticButton
                     className="pdp-add-btn"
                     onClick={handleAddToCart}
                     disabled={availableQty === 0 || adding}
                   >
-                    {availableQty === 0 ? 'Sold Out' : adding ? 'Adding...' : 'Add to Cart'}
+                    {availableQty === 0 ? 'Sold Out' : adding ? 'Acquiring...' : 'Acquire Piece'}
                   </MagneticButton>
                 </div>
 
                 {added && (
                   <div className="product-added-notice" role="status" style={{ justifyContent: 'flex-start' }}>
-                    <span>✓ Added to cart. Ready for review or checkout.</span>
+                    <span>✓ Piece acquired. Ready for review or checkout.</span>
                   </div>
                 )}
 

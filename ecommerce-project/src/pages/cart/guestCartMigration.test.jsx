@@ -361,7 +361,7 @@ describe('Guest Cart to Authenticated Cart Migration Lifecycle', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in to continue/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /sign in to complete acquisition/i })).toBeInTheDocument();
     });
   });
 });

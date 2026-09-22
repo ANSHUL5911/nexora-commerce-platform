@@ -204,9 +204,9 @@ export function CatalogPage({ cart, loadCart, currentUser, onAuthChange }) {
         {!loading && !error && products.length === 0 && (
           <EmptyState
             preset="search"
-            title="No products found"
-            description={search ? `No archival items indexed under "${search}". The collection maintains strict curation; inspect adjacent disciplines or return to the complete index.` : 'No archival pieces are currently cataloged in this discipline.'}
-            actionLabel="View All Products"
+            title="No Archival Pieces Indexed"
+            description={search ? `No archival pieces indexed under '${search}'. The collection maintains strict curation; inspect adjacent disciplines or return to the complete index.` : 'No archival pieces are currently cataloged in this discipline.'}
+            actionLabel="Return to Complete Index"
             onAction={() => handleCategorySelect('ALL')}
           />
         )}

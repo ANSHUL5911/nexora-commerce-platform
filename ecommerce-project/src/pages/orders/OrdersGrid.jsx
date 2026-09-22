@@ -175,10 +175,10 @@ export function OrdersGrid({
     return (
       <EmptyState
         preset="orders"
-        title="No placed orders"
-        description="You have not placed any orders yet. Explore our curated collections to place your first order."
-        actionLabel="Start Shopping"
-        actionTo="/"
+        title="Archival Acquisition Ledger Empty"
+        description="No past acquisitions recorded on this ledger. Confirmed orders, shipment manifests, and milestone timelines will register here."
+        actionLabel="Inspect Collection Index"
+        actionTo="/catalog"
       />
     );
   }

@@ -99,7 +99,7 @@ export function DeliveryOptions({
                             className="button-primary submit-shipping-btn"
                             onClick={onContinue}
                         >
-                            Continue to Order Review
+                            Confirm Dispatch Method
                         </button>
                     </div>
                 </div>

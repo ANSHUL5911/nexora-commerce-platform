@@ -65,7 +65,7 @@ describe('CartPage component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/your cart is empty/i)).toBeInTheDocument();
+    expect(screen.getByText(/acquisition bag empty/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /discover collections/i })).toBeInTheDocument();
   });
 
@@ -168,7 +168,7 @@ describe('CartPage component', () => {
 
     // Must open authentication modal gate
     expect(screen.getByRole('dialog', { name: /account login/i })).toBeInTheDocument();
-    expect(screen.getByText(/create an account or sign in to continue to checkout/i)).toBeInTheDocument();
+    expect(screen.getByText(/create an account or sign in to complete acquisition/i)).toBeInTheDocument();
   });
 
   it('navigates directly to /checkout when authenticated customer clicks Proceed to Checkout', async () => {

@@ -45,8 +45,8 @@ export function Product({ product, loadCart, currentUser }) {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     } catch (err) {
-      console.error('Failed to add to cart:', err);
-      setErrorMsg(err?.message || 'Failed to add item to cart');
+      console.error('Failed to acquire piece:', err);
+      setErrorMsg(err?.message || 'Failed to acquire piece');
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export function Product({ product, loadCart, currentUser }) {
           <span className="product-card-price">{formatMoney(pricePaise)}</span>
         </div>
 
-        {/* Controls: Quantity Selector + Add to Cart */}
+        {/* Controls: Quantity Selector + Acquire Piece */}
         <div className="product-card-controls">
           <div className="product-card-qty">
             <select
@@ -153,13 +153,13 @@ export function Product({ product, loadCart, currentUser }) {
             onClick={addToCart}
             disabled={loading || availableQty === 0}
           >
-            {loading ? 'Adding...' : availableQty === 0 ? 'Out of Stock' : 'Add to Cart'}
+            {loading ? 'Acquiring...' : availableQty === 0 ? 'Sold Out' : 'Acquire Piece'}
           </button>
         </div>
 
         {added && (
           <div className="product-added-notice" role="status">
-            <span>✓ Added to Cart</span>
+            <span>✓ Piece Acquired</span>
           </div>
         )}
 

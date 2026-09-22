@@ -117,7 +117,7 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
         {cart.length === 0 ? (
           <EmptyState
             preset="cart"
-            title="Your cart is empty"
+            title="Acquisition Bag Empty"
             description="The acquisition bag contains no cataloged pieces. Curated editions await inspection in the permanent collection."
             actionLabel="Discover Collections"
             actionTo="/catalog"
@@ -230,7 +230,7 @@ export function CartPage({ cart = [], loadCart, currentUser, onAuthChange }) {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={handleAuthSuccess}
-        subtitle="Create an account or sign in to continue to checkout."
+        subtitle="Create an account or sign in to complete acquisition."
       />
     </>
   );

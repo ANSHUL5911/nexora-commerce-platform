@@ -106,9 +106,13 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
 
   const deliveryDate = dayjs(order.createdAt).add(5, 'day').format('dddd, MMMM D, YYYY');
 
-  let statusHeading = `Estimated Delivery: ${deliveryDate}`;
+  let statusHeading = 'Milestone: Dispatch Verified. Shipment in transit to registered coordinates.';
   if (isDelivered) {
     statusHeading = `Delivered on ${dayjs(order.updatedAt || order.createdAt).format('MMMM D, YYYY')}`;
+  } else if (isProcessing) {
+    statusHeading = 'Milestone: Allocation Settled. Preparing shipment for registered coordinates.';
+  } else if (isShipped) {
+    statusHeading = 'Milestone: Dispatch Verified. Shipment in transit to registered coordinates.';
   } else if (isPending) {
     statusHeading = 'Payment required before fulfillment tracking becomes available.';
   } else if (isCancelled) {
@@ -142,6 +146,9 @@ export function TrackingPage({ cart, currentUser, onAuthChange }) {
             <h1 className="tracking-delivery-date">
               {statusHeading}
             </h1>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              Estimated Manifest Arrival: {deliveryDate}
+            </div>
           </header>
 
           <section className="tracking-product-preview" aria-label="Tracking Item Preview">

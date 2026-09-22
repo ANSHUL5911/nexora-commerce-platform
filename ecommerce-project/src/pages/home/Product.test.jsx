@@ -232,7 +232,7 @@ describe('Product component', () => {
 
       const addButton = screen.getByTestId('add-to-cart-button');
       expect(addButton).toBeDisabled();
-      expect(addButton).toHaveTextContent('Out of Stock');
+      expect(addButton).toHaveTextContent('Sold Out');
 
       const selector = screen.getByTestId('quantity-selector');
       expect(selector).toBeDisabled();
@@ -285,7 +285,7 @@ describe('Product component', () => {
       // Must call loadCart() to refresh application state
       expect(loadCart).toHaveBeenCalled();
       // Must show success notice
-      expect(await screen.findByText('✓ Added to Cart')).toBeInTheDocument();
+      expect(await screen.findByText('✓ Piece Acquired')).toBeInTheDocument();
 
       // Must be present in localStorage nexora_guest_cart
       const stored = JSON.parse(localStorage.getItem('nexora_guest_cart'));

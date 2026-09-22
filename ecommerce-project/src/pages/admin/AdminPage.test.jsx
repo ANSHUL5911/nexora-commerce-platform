@@ -164,7 +164,7 @@ describe('AdminPage Component — Nexora Commerce Operations Console (Phase 07.2
     );
 
     // Overview headings
-    expect(await screen.findByRole('heading', { level: 2, name: /commerce operations/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: /operations console/i })).toBeInTheDocument();
     expect(screen.getByText(/total products/i)).toBeInTheDocument();
     expect(screen.getAllByText('24').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('42')).toBeInTheDocument(); // total orders
@@ -192,7 +192,7 @@ describe('AdminPage Component — Nexora Commerce Operations Console (Phase 07.2
     );
 
     // Initial view: Overview
-    expect(await screen.findByRole('heading', { level: 2, name: /commerce operations/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: /operations console/i })).toBeInTheDocument();
 
     // Navigate to Orders
     const ordersTab = screen.getByRole('button', { name: /^orders$/i });

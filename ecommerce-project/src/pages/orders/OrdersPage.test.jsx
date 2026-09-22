@@ -70,8 +70,8 @@ describe('OrdersPage component', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/no placed orders/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /start shopping/i })).toBeInTheDocument();
+    expect(await screen.findByText(/archival acquisition ledger empty/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /inspect collection index/i })).toBeInTheDocument();
   });
 
   it('renders orders list with canonical backend response envelope { success: true, data: [...], pagination: {...} }', async () => {
